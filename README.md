@@ -71,17 +71,19 @@ The baseline factory models **12 heterogeneous simulated machines**:
 
 ## Development Status & Roadmap
 
-Current Status: **Phase 1 — Factory Simulation Core (COMPLETED)**
+Current Status: **Phase 2 — Protocol Simulation and Protocol Adapters (COMPLETED)**
 
 - **Phase 0 — Architecture & Control Docs**: Completed.
 - **Phase 1 — Factory Simulation Core**: Completed. Run local demo via `python -m simulator` or test suite via `python -m pytest tests/simulator/`.
-- **Phase 2 — Protocol Simulation & Adapters**: Next Target.
+- **Phase 2 — Protocol Simulation & Adapters**: Completed. Run local protocol demo via `python -m protocols.protocol_demo` or test suite via `python -m pytest tests/protocols/`.
+- **Phase 3 — Canonical Telemetry & Edge Ingestion**: Next Target.
 
 For detailed architectural details and documentation:
 - [AGENTS.md](AGENTS.md) — AI agent execution guidelines and strict constraints.
 - [PROJECT_SPECIFICATION.md](PROJECT_SPECIFICATION.md) — Master architectural blueprint and data schemas.
 - [PHASE_STATUS.md](PHASE_STATUS.md) — Current implementation milestone tracker.
-- [docs/phase1/simulation-architecture.md](docs/phase1/simulation-architecture.md) — Phase 1 architecture details.
+- [docs/phase1/simulation-architecture.md](docs/phase1/simulation-architecture.md) — Phase 1 simulation architecture.
+- [docs/phase2/protocol-architecture.md](docs/phase2/protocol-architecture.md) — Phase 2 protocol architecture and adapters.
 
 ---
 

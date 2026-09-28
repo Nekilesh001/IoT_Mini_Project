@@ -2,7 +2,7 @@
 
 ## Current Status Overview
 
-- **Current Active Phase**: Phase 1 — Factory Simulation Core
+- **Current Active Phase**: Phase 2 — Protocol Simulation and Protocol Adapters
 - **Phase Status**: `COMPLETED`
 
 ---
@@ -13,7 +13,7 @@
 | :---: | :--- | :---: | :--- |
 | **0** | Architecture, Factory Definition, Machine R&D | **COMPLETED** | Core specification and control docs created |
 | **1** | Factory Simulation Core | **COMPLETED** | 12-machine physics engine, state machine, dynamic telemetry, causal degradation, scenarios, unit tests passing |
-| **2** | Protocol Simulation and Adapters (Modbus TCP, OPC UA, MQTT) | Planned | Next phase target |
+| **2** | Protocol Simulation and Adapters (Modbus TCP, OPC UA, MQTT) | **COMPLETED** | Modbus TCP server/adapter, OPC UA server/adapter, MQTT publisher/adapter, 18 automated tests passing, demo runnable |
 | **3** | Canonical Telemetry and Edge Ingestion Pipeline | Planned | Protocol-agnostic edge validation & normalization |
 | **4** | Local Storage, MQTT Event Bus, Buffering & Processing | Planned | Mosquitto broker & PostgreSQL / TimescaleDB storage |
 | **5** | FastAPI Backend Service & React Operations Dashboard | Planned | Operations & predictive maintenance UI |
@@ -28,22 +28,24 @@
 
 ---
 
-## Phase 1 Acceptance Verification Summary
+## Phase 2 Acceptance Verification Summary
 
-- [x] **12 Heterogeneous Machines Initialized**: All 12 distinct machine profiles loaded (`CNC-001` through `CHL-001`).
-- [x] **Protocol Metadata Assigned**: Configured `OPC_UA`, `MODBUS_TCP`, and `MQTT` metadata flags without protocol code coupling.
-- [x] **State Machine Validation**: Implemented `OperatingState` transitions and `HealthState` derivation with invalid transition enforcement.
-- [x] **Machine-Specific Signal Catalogs**: Verified distinct, non-identical signal catalogs across machine types.
-- [x] **Causal Physics & Degradation**: Implemented correlated load and wear physics (spindle load -> thermal/vibration, bearing wear -> temp/vibration).
-- [x] **Target Leakage Prevention**: Verified ground-truth variables are isolated in `SimulationGroundTruth` objects and excluded from public measurement payloads.
-- [x] **Deterministic Simulation**: Verified byte-for-byte identical scenario output with fixed random seeds.
-- [x] **Offline Zero-Dependency Execution**: Verified simulator operates fully offline without network sockets or external protocol packages.
-- [x] **Comprehensive Test Suite**: 14 unit tests passing in `tests/simulator/`.
-- [x] **Runnable Demonstration**: Entry point `python -m simulator` executing cleanly.
+- [x] **12 Machine Protocol Assignments**: Correct assignments maintained (5 Modbus TCP, 4 OPC UA, 3 MQTT).
+- [x] **Simulator Independence**: Zero protocol package imports in `simulator/` core engine.
+- [x] **Modbus TCP Simulation**: `ModbusServerManager` implemented with deterministic Unit IDs and holding registers using supported PyModbus 3.15 server APIs.
+- [x] **Modbus TCP Adapter**: `ModbusAdapter` implemented with deterministic register decoding into `ProtocolReading`.
+- [x] **OPC UA Simulation**: `OPCUAServerManager` implemented with deterministic node hierarchy (`ns=2;s=Factory/Plant_01/Line_A/...`).
+- [x] **OPC UA Adapter**: `OPCUAAdapter` implemented with typed variable reading into `ProtocolReading`.
+- [x] **MQTT Simulation**: `MQTTPublisherManager` implemented with deterministic topic hierarchy (`factory/PLANT_01/LINE_A/...`).
+- [x] **MQTT Adapter**: `MQTTAdapter` implemented with embedded offline local broker and JSON decoding.
+- [x] **Protocol Health Tracking**: Server/adapter health exposed (`CONNECTED`, `DISCONNECTED`, `DEGRADED`, `ERROR`).
+- [x] **Failure & Error Handling**: Verified graceful error reporting when servers are unavailable or payloads malformed.
+- [x] **Comprehensive Test Suite**: 18 automated tests passing in `tests/protocols/` (32 tests passing repository-wide).
+- [x] **Runnable Demonstration**: Entry point `python -m protocols.protocol_demo` executing cleanly across all 12 machines.
 
 ---
 
 ## Next Phase Target
 
-- **Phase 2 — Protocol Simulation and Adapters**
-  - Target: Implement Modbus TCP servers (`PyModbus`), OPC UA servers (`asyncua`), MQTT publishers (`paho-mqtt`), and edge protocol adapters.
+- **Phase 3 — Canonical Telemetry and Edge Ingestion Pipeline**
+  - Target: Protocol-agnostic edge ingestion, schema validation, physical normalization, sequence deduplication, and quality engine.
