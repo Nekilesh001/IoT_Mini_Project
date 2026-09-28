@@ -71,12 +71,17 @@ The baseline factory models **12 heterogeneous simulated machines**:
 
 ## Development Status & Roadmap
 
-Current Status: **Phase 0 — Architecture & Documentation Freeze**
+Current Status: **Phase 1 — Factory Simulation Core (COMPLETED)**
 
-For detailed architectural details and project phases, see:
+- **Phase 0 — Architecture & Control Docs**: Completed.
+- **Phase 1 — Factory Simulation Core**: Completed. Run local demo via `python -m simulator` or test suite via `python -m pytest tests/simulator/`.
+- **Phase 2 — Protocol Simulation & Adapters**: Next Target.
+
+For detailed architectural details and documentation:
 - [AGENTS.md](AGENTS.md) — AI agent execution guidelines and strict constraints.
 - [PROJECT_SPECIFICATION.md](PROJECT_SPECIFICATION.md) — Master architectural blueprint and data schemas.
 - [PHASE_STATUS.md](PHASE_STATUS.md) — Current implementation milestone tracker.
+- [docs/phase1/simulation-architecture.md](docs/phase1/simulation-architecture.md) — Phase 1 architecture details.
 
 ---
 

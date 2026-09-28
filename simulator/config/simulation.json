@@ -1,0 +1,8 @@
+{
+  "simulation_version": "1.0.0",
+  "default_plant_id": "PLANT_01",
+  "default_line_id": "LINE_A",
+  "default_timestep_seconds": 1.0,
+  "default_random_seed": 42,
+  "noise_factor": 0.02
+}
