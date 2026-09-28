@@ -71,12 +71,13 @@ The baseline factory models **12 heterogeneous simulated machines**:
 
 ## Development Status & Roadmap
 
-Current Status: **Phase 2 — Protocol Simulation and Protocol Adapters (COMPLETED)**
+Current Status: **Phase 3 — Canonical Telemetry and Edge Ingestion Pipeline (COMPLETED)**
 
 - **Phase 0 — Architecture & Control Docs**: Completed.
 - **Phase 1 — Factory Simulation Core**: Completed. Run local demo via `python -m simulator` or test suite via `python -m pytest tests/simulator/`.
 - **Phase 2 — Protocol Simulation & Adapters**: Completed. Run local protocol demo via `python -m protocols.protocol_demo` or test suite via `python -m pytest tests/protocols/`.
-- **Phase 3 — Canonical Telemetry & Edge Ingestion**: Next Target.
+- **Phase 3 — Canonical Telemetry & Edge Ingestion**: Completed. Run local edge demo via `python -m edge.demo` or test suite via `python -m pytest tests/edge/`.
+- **Phase 4 — Local Storage, MQTT Event Bus & Buffering**: Next Target.
 
 For detailed architectural details and documentation:
 - [AGENTS.md](AGENTS.md) — AI agent execution guidelines and strict constraints.
@@ -84,6 +85,7 @@ For detailed architectural details and documentation:
 - [PHASE_STATUS.md](PHASE_STATUS.md) — Current implementation milestone tracker.
 - [docs/phase1/simulation-architecture.md](docs/phase1/simulation-architecture.md) — Phase 1 simulation architecture.
 - [docs/phase2/protocol-architecture.md](docs/phase2/protocol-architecture.md) — Phase 2 protocol architecture and adapters.
+- [docs/phase3/edge-architecture.md](docs/phase3/edge-architecture.md) — Phase 3 edge ingestion architecture and canonical schema.
 
 ---
 
