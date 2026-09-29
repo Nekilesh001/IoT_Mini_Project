@@ -49,14 +49,21 @@ coverage.xml
 .pytest_cache/
 cover/
 
-# Environments
+# Environments & Secrets
 .env
+.env.*
+!.env.example
 .venv
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+
+# Node / React Frontend
+node_modules/
+dist/
+.vite/
 
 # SQLite databases & temp demo/test files
 *.db
@@ -73,3 +80,4 @@ local_buffer.db
 *.swo
 .DS_Store
 Thumbs.db
+
