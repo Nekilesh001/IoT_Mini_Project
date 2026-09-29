@@ -121,16 +121,20 @@ class OPCUAServerManager(BaseProtocolServer):
             if not profile:
                 return
 
+            tasks = []
             if "sequence" in nodes:
-                await nodes["sequence"].write_value(int(snapshot.sequence))
+                tasks.append(nodes["sequence"].write_value(int(snapshot.sequence)))
             if "operating_state" in nodes:
-                await nodes["operating_state"].write_value(str(snapshot.operating_state))
+                tasks.append(nodes["operating_state"].write_value(str(snapshot.operating_state)))
 
             for sig_def in profile.signals:
                 if sig_def.name in nodes and sig_def.name in snapshot.public_measurements:
                     val = snapshot.public_measurements[sig_def.name]
                     v_val = OPCUAMapper.cast_to_variant_val(val, sig_def.signal_type)
-                    await nodes[sig_def.name].write_value(v_val)
+                    tasks.append(nodes[sig_def.name].write_value(v_val))
+
+            if tasks:
+                await asyncio.gather(*tasks)
 
         future = asyncio.run_coroutine_threadsafe(_async_update(), self._loop)
         try:
