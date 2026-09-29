@@ -58,6 +58,18 @@ def run_train_anomaly(config: Optional[MLConfig] = None) -> Tuple[Any, Dict[str,
 
     # 3. Train model
     logger.info("[1/4] Fitting Isolation Forest model...")
+    # Dynamic contamination: use the actual anomaly rate from training data
+    # instead of the fixed config value, so the model boundary reflects reality.
+    if cfg.use_dynamic_contamination and "target_is_anomaly" in train_df.columns:
+        actual_contamination = float(train_df["target_is_anomaly"].mean())
+        # Clamp to a reasonable range to avoid degenerate models
+        actual_contamination = max(0.01, min(0.40, actual_contamination))
+        logger.info(
+            f" -> Dynamic contamination: {actual_contamination:.4f} "
+            f"(config was: {cfg.anomaly_contamination:.4f})"
+        )
+        cfg.anomaly_contamination = actual_contamination
+
     model, val_metrics, test_metrics = train_anomaly_pipeline(
         X_train=X_train,
         X_val=X_val,

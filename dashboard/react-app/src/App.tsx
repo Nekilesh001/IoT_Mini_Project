@@ -7,6 +7,7 @@ import { MachineDetailPage } from "./pages/MachineDetailPage";
 import { AlertsPage } from "./pages/AlertsPage";
 import { MLPage } from "./pages/MLPage";
 import { ProtocolHealthPage } from "./pages/ProtocolHealthPage";
+import { ManagementPage } from "./pages/ManagementPage";
 
 export const App: React.FC = () => {
   return (
@@ -18,6 +19,7 @@ export const App: React.FC = () => {
           <Route path="/machines/:machineId" element={<MachineDetailPage />} />
           <Route path="/alerts" element={<AlertsPage />} />
           <Route path="/ml" element={<MLPage />} />
+          <Route path="/management" element={<ManagementPage />} />
           <Route path="/protocols" element={<ProtocolHealthPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -231,6 +231,10 @@ class AlertRepository:
         """Lists active and historical alerts for a specific machine."""
         return self.list_alerts(machine_id=machine_id, limit=limit)
 
+    def get_all_active_alerts(self) -> List[AlertRecord]:
+        """Returns all currently OPEN or ACKNOWLEDGED alerts (unbounded for cooldown restore)."""
+        return self.list_active_alerts(limit=10000)
+
     def get_summary(self) -> Dict[str, Any]:
         """Calculates aggregated factory alert KPIs."""
         session: Session = self._session_factory()

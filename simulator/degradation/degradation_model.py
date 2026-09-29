@@ -54,6 +54,7 @@ class DegradationModel:
     def step(self, operating_state: OperatingState, operating_load: float, time_delta_seconds: float) -> None:
         """
         Advance internal wear and degradation based on operating state and load.
+        RUNNING/WARNING accumulate wear; MAINTENANCE/RECOVERY partially repair it.
         """
         if operating_state == OperatingState.RUNNING:
             load_factor = (operating_load / 100.0) ** 1.5
@@ -65,5 +66,7 @@ class DegradationModel:
             self._hidden_wear_counter += wear
             self._degradation_level = min(100.0, self._degradation_level + wear)
         elif operating_state in (OperatingState.MAINTENANCE, OperatingState.RECOVERY):
-            # Recovery/maintenance slightly lowers degradation if active work is done
-            pass
+            # Partial repair: maintenance reduces degradation at 2% per hour.
+            # Simulates physical cleaning, part replacement, and recalibration.
+            repair_rate_per_sec = 2.0 / 3600.0  # 2% degradation recovered per hour
+            self._degradation_level = max(0.0, self._degradation_level - repair_rate_per_sec * time_delta_seconds)

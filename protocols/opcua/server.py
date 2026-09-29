@@ -56,22 +56,27 @@ class OPCUAServerManager(BaseProtocolServer):
         self._is_running = True
         self._health = ProtocolHealth.CONNECTED
 
+        ready_event = threading.Event()
+
         def _run():
             asyncio.set_event_loop(self._loop)
             async def _init_and_start():
-                self._server = Server()
-                await self._server.init()
-                self._server.set_endpoint(self._endpoint)
-                self._namespace_idx = await self._server.register_namespace(OPCUAMapper.NAMESPACE_URI)
-                await self._setup_node_hierarchy()
-                await self._server.start()
+                try:
+                    self._server = Server()
+                    await self._server.init()
+                    self._server.set_endpoint(self._endpoint)
+                    self._namespace_idx = await self._server.register_namespace(OPCUAMapper.NAMESPACE_URI)
+                    await self._setup_node_hierarchy()
+                    await self._server.start()
+                finally:
+                    ready_event.set()
 
             self._loop.run_until_complete(_init_and_start())
             self._loop.run_forever()
 
         self._thread = threading.Thread(target=_run, daemon=True)
         self._thread.start()
-        time.sleep(1.0)  # Allow OPC UA server startup time
+        ready_event.wait(timeout=10.0)
 
     async def _setup_node_hierarchy(self) -> None:
         """Build deterministic OPC UA node hierarchy for registered OPC UA machines."""

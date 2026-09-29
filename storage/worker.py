@@ -34,6 +34,7 @@ from scenarios.repository import ScenarioStateRepository
 from ml.inference.service import MLInferenceService
 from ml.inference.alert_adapter import MLAlertAdapter
 from ml.inference.models import InferenceStatus
+from ml.inference.window_aggregator import WindowedAnomalyAggregator
 
 logging.basicConfig(
     level=logging.INFO,
@@ -65,7 +66,23 @@ def run_worker():
     ml_alert_adapter = MLAlertAdapter(alert_repository)
     scenario_repository = ScenarioStateRepository(session_factory)
 
-    # 2. Initialize ML Inference Service
+    # 2a. Initialize Windowed Anomaly Aggregator
+    # Requires 10+ readings, and 40%+ must be anomalous before any ML alert fires.
+    # This prevents single-reading false positives from transient sensor spikes.
+    ml_window_size = int(os.getenv("ML_WINDOW_SIZE", "30"))
+    ml_min_readings = int(os.getenv("ML_MIN_READINGS_BEFORE_ALERT", "10"))
+    ml_alert_ratio = float(os.getenv("ML_ALERT_RATIO_THRESHOLD", "0.40"))
+    anomaly_aggregator = WindowedAnomalyAggregator(
+        window_size=ml_window_size,
+        min_readings_before_alert=ml_min_readings,
+        alert_ratio_threshold=ml_alert_ratio,
+    )
+    logger.info(
+        f"[StorageWorker] Windowed anomaly aggregator: window={ml_window_size}, "
+        f"min_readings={ml_min_readings}, ratio_threshold={ml_alert_ratio}"
+    )
+
+    # 2b. Initialize ML Inference Service
     ml_service = MLInferenceService() if ml_enabled else None
 
     # 3. Initialize Simulator, Scenarios & Protocols
@@ -154,10 +171,26 @@ def run_worker():
                         ml_res = ml_service.infer(res.canonical_telemetry)
                         if ml_res.status == InferenceStatus.READY:
                             ml_inferences_count += 1
+                            # Always persist the raw inference result for dashboard charts
                             ml_repository.insert(ml_res)
-                            ml_alerts = ml_alert_adapter.process_inference_result(ml_res)
-                            if ml_alerts:
-                                new_alerts += len(ml_alerts)
+
+                            # Record result in the sliding window aggregator
+                            anomaly_aggregator.record(ml_res)
+
+                            # Only trigger ML alerts when the window confirms sustained anomaly.
+                            # This prevents per-second false positives from transient spikes.
+                            m_id = res.canonical_telemetry.machine_id
+                            if anomaly_aggregator.should_alert(m_id):
+                                ml_alerts = ml_alert_adapter.process_inference_result(ml_res)
+                                if ml_alerts:
+                                    new_alerts += len(ml_alerts)
+                                    # Log window context alongside alert for observability
+                                    summary = anomaly_aggregator.get_window_summary(m_id)
+                                    logger.info(
+                                        f"[ML-Window] Sustained anomaly confirmed for {m_id}: "
+                                        f"ratio={summary['anomaly_ratio']:.2f}, "
+                                        f"ema={summary['ema_score']:.3f}"
+                                    )
 
             active_scenarios_str = f" | Active Scenarios: {', '.join(active_scenarios_in_db)}" if active_scenarios_in_db else ""
             alert_info = f" | Alerts: {new_alerts}" if new_alerts > 0 else ""

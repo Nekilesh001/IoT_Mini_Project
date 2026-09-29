@@ -10,6 +10,11 @@ from simulator.degradation.degradation_model import DegradationModel
 from simulator.process_models.base import MachineBehaviorStrategy
 
 
+# Tool life constants (seconds before each tool change event)
+_CNC_MACHINING_TOOL_LIFE_S = 1800.0   # ~30 min per tool
+_CNC_LATHE_TOOL_LIFE_S = 2700.0       # ~45 min per tool
+
+
 class CNCMachiningCenterBehavior(MachineBehaviorStrategy):
     def calculate_telemetry(
         self, profile: MachineProfile, operating_state: OperatingState, load_pct: float,
@@ -19,24 +24,31 @@ class CNCMachiningCenterBehavior(MachineBehaviorStrategy):
         is_running = operating_state in (OperatingState.RUNNING, OperatingState.WARNING)
 
         base_speed = 12000.0 * (load_pct / 100.0) if is_running else 0.0
-        spindle_speed = max(0.0, base_speed + rng.uniform(-50.0, 50.0)) if is_running else 0.0
+        # Gaussian noise: realistic sensor measurement uncertainty
+        spindle_speed = max(0.0, base_speed + rng.gauss(0, 20.0)) if is_running else 0.0
 
-        spindle_load = max(0.0, load_pct + (deg_lvl * 0.2) + rng.uniform(-1.5, 1.5)) if is_running else 0.0
+        spindle_load = max(0.0, load_pct + (deg_lvl * 0.2) + rng.gauss(0, 0.6)) if is_running else 0.0
 
         ambient = 25.0
         heat_rise = (spindle_load * 0.3) + (deg_lvl * 0.4)
         if degradation.get_condition_severity("overheating") > 0:
             heat_rise += degradation.get_condition_severity("overheating") * 0.5
-        spindle_temp = ambient + heat_rise + rng.uniform(-0.5, 0.5) if is_running else ambient
+        spindle_temp = ambient + heat_rise + rng.gauss(0, 0.2) if is_running else ambient
 
         vib_base = 1.0 + (deg_lvl * 0.15)
         if degradation.get_condition_severity("bearing_wear") > 0:
             vib_base += (degradation.get_condition_severity("bearing_wear") * 0.1)
-        vibration = max(0.1, vib_base + rng.uniform(-0.1, 0.1)) if is_running else 0.05
+        # 1% chance of an ADC spike (sensor glitch)
+        vib_noise = rng.gauss(0, 0.04) if rng.random() > 0.01 else rng.uniform(0.5, 1.5)
+        vibration = max(0.1, vib_base + vib_noise) if is_running else 0.05
 
         feed_rate = 1500.0 * (load_pct / 100.0) if is_running else 0.0
-        coolant_p = 20.0 - (deg_lvl * 0.05) + rng.uniform(-0.3, 0.3) if is_running else 0.0
-        tool_wear = min(100.0, 10.0 + (time_elapsed_seconds * 0.01) + (deg_lvl * 0.5))
+        coolant_p = 20.0 - (deg_lvl * 0.05) + rng.gauss(0, 0.12) if is_running else 0.0
+
+        # Tool wear resets on each tool change (modular by tool life)
+        time_in_tool = time_elapsed_seconds % _CNC_MACHINING_TOOL_LIFE_S if is_running else 0.0
+        tool_wear = min(100.0, 10.0 + (time_in_tool / _CNC_MACHINING_TOOL_LIFE_S * 90.0) + (deg_lvl * 0.5))
+        tool_change_count = int(time_elapsed_seconds // _CNC_MACHINING_TOOL_LIFE_S)
 
         x_pos = math.sin(time_elapsed_seconds * 0.1) * 200.0 if is_running else 0.0
         y_pos = math.cos(time_elapsed_seconds * 0.1) * 150.0 if is_running else 0.0
@@ -53,6 +65,7 @@ class CNCMachiningCenterBehavior(MachineBehaviorStrategy):
             "feed_rate_mm_min": round(feed_rate, 2),
             "coolant_pressure_bar": round(coolant_p, 2),
             "tool_wear_pct": round(tool_wear, 2),
+            "tool_change_count": tool_change_count,
             "axis_x_position_mm": round(x_pos, 2),
             "axis_y_position_mm": round(y_pos, 2),
             "axis_z_position_mm": round(z_pos, 2),
@@ -69,14 +82,17 @@ class CNCLatheBehavior(MachineBehaviorStrategy):
         deg_lvl = degradation.degradation_level
         is_running = operating_state in (OperatingState.RUNNING, OperatingState.WARNING)
 
-        speed = 3500.0 * (load_pct / 100.0) + rng.uniform(-20.0, 20.0) if is_running else 0.0
-        load = max(0.0, load_pct + (deg_lvl * 0.15) + rng.uniform(-1.0, 1.0)) if is_running else 0.0
-        spindle_temp = 22.0 + (load * 0.25) + (deg_lvl * 0.3) + rng.uniform(-0.4, 0.4) if is_running else 22.0
-        vibration = 0.8 + (deg_lvl * 0.12) + rng.uniform(-0.08, 0.08) if is_running else 0.04
+        speed = 3500.0 * (load_pct / 100.0) + rng.gauss(0, 8.0) if is_running else 0.0
+        load = max(0.0, load_pct + (deg_lvl * 0.15) + rng.gauss(0, 0.4)) if is_running else 0.0
+        spindle_temp = 22.0 + (load * 0.25) + (deg_lvl * 0.3) + rng.gauss(0, 0.16) if is_running else 22.0
+        vibration = 0.8 + (deg_lvl * 0.12) + rng.gauss(0, 0.03) if is_running else 0.04
         feed_rate = 500.0 * (load_pct / 100.0) if is_running else 0.0
-        chuck_p = 35.0 + rng.uniform(-0.5, 0.5) if operating_state != OperatingState.OFF else 0.0
-        cutting_temp = 180.0 + (load * 2.0) + (deg_lvl * 1.5) if is_running else 22.0
-        tool_wear = min(100.0, 15.0 + (time_elapsed_seconds * 0.015))
+        chuck_p = 35.0 + rng.gauss(0, 0.2) if operating_state != OperatingState.OFF else 0.0
+        cutting_temp = 180.0 + (load * 2.0) + (deg_lvl * 1.5) + rng.gauss(0, 2.0) if is_running else 22.0
+        # Tool wear resets on each tool change
+        time_in_tool = time_elapsed_seconds % _CNC_LATHE_TOOL_LIFE_S if is_running else 0.0
+        tool_wear = min(100.0, 15.0 + (time_in_tool / _CNC_LATHE_TOOL_LIFE_S * 85.0))
+        tool_change_count = int(time_elapsed_seconds // _CNC_LATHE_TOOL_LIFE_S)
         cycle_t = 45.0
         parts = int(time_elapsed_seconds // 45.0)
 
@@ -89,6 +105,7 @@ class CNCLatheBehavior(MachineBehaviorStrategy):
             "chuck_pressure_bar": round(chuck_p, 2),
             "cutting_temperature_c": round(cutting_temp, 2),
             "tool_wear_pct": round(tool_wear, 2),
+            "tool_change_count": tool_change_count,
             "cycle_time_s": round(cycle_t, 2),
             "parts_produced_count": parts
         }
@@ -109,19 +126,19 @@ class Robot6AxisBehavior(MachineBehaviorStrategy):
 
         for i in range(6):
             t_rise = (load_pct * 0.15) + (deg_lvl * 0.25)
-            j_temps.append(round((base_temps[i] + t_rise + rng.uniform(-0.5, 0.5)) if is_running else 25.0, 2))
-            trq = (base_torques[i] * (load_pct / 100.0) * (1.0 + deg_lvl * 0.005)) + rng.uniform(-2.0, 2.0)
+            j_temps.append(round((base_temps[i] + t_rise + rng.gauss(0, 0.2)) if is_running else 25.0, 2))
+            trq = (base_torques[i] * (load_pct / 100.0) * (1.0 + deg_lvl * 0.005)) + rng.gauss(0, 0.8)
             j_torques.append(round(trq if is_running else 0.0, 2))
 
-        pos_err = 0.05 + (deg_lvl * 0.02) + rng.uniform(-0.01, 0.01) if is_running else 0.005
-        ctrl_temp = 35.0 + (load_pct * 0.1) + rng.uniform(-0.3, 0.3) if operating_state != OperatingState.OFF else 22.0
+        pos_err = 0.05 + (deg_lvl * 0.02) + rng.gauss(0, 0.004) if is_running else 0.005
+        ctrl_temp = 35.0 + (load_pct * 0.1) + rng.gauss(0, 0.12) if operating_state != OperatingState.OFF else 22.0
         cycle_st = "MOVING" if is_running else ("OFF" if operating_state == OperatingState.OFF else "IDLE")
         op_hours = 1200.0 + (time_elapsed_seconds / 3600.0)
         alarm = 101 if degradation.get_condition_severity("joint_fault") > 0 else 0
 
         return {
             "joint_1_temp_c": j_temps[0], "joint_2_temp_c": j_temps[1], "joint_3_temp_c": j_temps[2],
-            "joint_4_temp_c": j_temps[3], "joint_5_temp_c": j_temps[4], "joint_6_temp_c": j_temps[6 if False else 5],
+            "joint_4_temp_c": j_temps[3], "joint_5_temp_c": j_temps[4], "joint_6_temp_c": j_temps[5],
             "joint_1_torque_nm": j_torques[0], "joint_2_torque_nm": j_torques[1], "joint_3_torque_nm": j_torques[2],
             "joint_4_torque_nm": j_torques[3], "joint_5_torque_nm": j_torques[4], "joint_6_torque_nm": j_torques[5],
             "position_error_norm_mm": round(pos_err, 4),
@@ -176,9 +193,9 @@ class ConveyorBehavior(MachineBehaviorStrategy):
         speed = 1.2 * (load_pct / 100.0) if is_running else 0.0
         load_kg = 250.0 * (load_pct / 55.0) if is_running else 0.0
         motor_curr = (14.5 * (load_pct / 55.0) + (deg_lvl * 0.15)) if is_running else (35.0 if is_jammed else 0.0)
-        motor_temp = 48.0 + (load_pct * 0.2) + (deg_lvl * 0.3) if operating_state != OperatingState.OFF else 22.0
-        vib = 0.4 + (deg_lvl * 0.08) + rng.uniform(-0.04, 0.04) if is_running else 0.02
-        tension = 2500.0 + (load_kg * 1.5) + rng.uniform(-20.0, 20.0) if operating_state != OperatingState.OFF else 0.0
+        motor_temp = 48.0 + (load_pct * 0.2) + (deg_lvl * 0.3) + rng.gauss(0, 0.3) if operating_state != OperatingState.OFF else 22.0
+        vib = 0.4 + (deg_lvl * 0.08) + rng.gauss(0, 0.016) if is_running else 0.02
+        tension = 2500.0 + (load_kg * 1.5) + rng.gauss(0, 8.0) if operating_state != OperatingState.OFF else 0.0
         throughput = 30.0 * (speed / 1.2) if is_running else 0.0
         cycles = 120 + int(time_elapsed_seconds // 300.0)
 
@@ -309,6 +326,10 @@ class CompressorBehavior(MachineBehaviorStrategy):
 
 
 class PumpBehavior(MachineBehaviorStrategy):
+    # Track start-stop count via a module-level dict keyed by machine instance
+    _start_counters: Dict[int, int] = {}
+    _was_running: Dict[int, bool] = {}
+
     def calculate_telemetry(
         self, profile: MachineProfile, operating_state: OperatingState, load_pct: float,
         degradation: DegradationModel, time_elapsed_seconds: float, rng: random.Random
@@ -316,20 +337,28 @@ class PumpBehavior(MachineBehaviorStrategy):
         deg_lvl = degradation.degradation_level
         is_running = operating_state in (OperatingState.RUNNING, OperatingState.WARNING)
 
-        suc_p = 2.1 + rng.uniform(-0.1, 0.1) if operating_state != OperatingState.OFF else 0.0
-        dis_p = 8.5 * (load_pct / 65.0) + rng.uniform(-0.2, 0.2) if is_running else suc_p
-        flow = 65.0 * (load_pct / 65.0) + rng.uniform(-1.0, 1.0) if is_running else 0.0
+        # Track start events: increment counter when machine transitions to RUNNING
+        machine_key = id(profile)
+        prev_running = PumpBehavior._was_running.get(machine_key, False)
+        if is_running and not prev_running:
+            PumpBehavior._start_counters[machine_key] = PumpBehavior._start_counters.get(machine_key, 310) + 1
+        PumpBehavior._was_running[machine_key] = is_running
+        start_stop_count = PumpBehavior._start_counters.get(machine_key, 310)
+
+        suc_p = 2.1 + rng.gauss(0, 0.04) if operating_state != OperatingState.OFF else 0.0
+        dis_p = 8.5 * (load_pct / 65.0) + rng.gauss(0, 0.08) if is_running else suc_p
+        flow = 65.0 * (load_pct / 65.0) + rng.gauss(0, 0.4) if is_running else 0.0
         spd = 2900.0 * (load_pct / 65.0) if is_running else 0.0
-        curr = 32.0 * (load_pct / 65.0) + (deg_lvl * 0.1) if is_running else 0.0
+        curr = 32.0 * (load_pct / 65.0) + (deg_lvl * 0.1) + rng.gauss(0, 0.1) if is_running else 0.0
         pwr = 18.5 * (load_pct / 65.0) if is_running else 0.0
 
-        brg_temp = 55.0 + (load_pct * 0.15) + (deg_lvl * 0.4)
+        brg_temp = 55.0 + (load_pct * 0.15) + (deg_lvl * 0.4) + rng.gauss(0, 0.3)
         if degradation.get_condition_severity("bearing_wear") > 0:
             brg_temp += degradation.get_condition_severity("bearing_wear") * 0.3
         brg_temp = round(brg_temp if is_running else 22.0, 2)
 
-        vib_x = 1.1 + (deg_lvl * 0.15) + rng.uniform(-0.05, 0.05) if is_running else 0.02
-        vib_y = 0.9 + (deg_lvl * 0.15) + rng.uniform(-0.05, 0.05) if is_running else 0.02
+        vib_x = 1.1 + (deg_lvl * 0.15) + rng.gauss(0, 0.02) if is_running else 0.02
+        vib_y = 0.9 + (deg_lvl * 0.15) + rng.gauss(0, 0.02) if is_running else 0.02
         alarm = brg_temp > 90.0 or vib_x > 8.0
 
         return {
@@ -342,7 +371,7 @@ class PumpBehavior(MachineBehaviorStrategy):
             "bearing_temperature_c": brg_temp,
             "vibration_x_mm_s": round(vib_x, 3),
             "vibration_y_mm_s": round(vib_y, 3),
-            "start_stop_count": 310,
+            "start_stop_count": start_stop_count,
             "alarm_state": alarm
         }
 
@@ -387,27 +416,67 @@ class VisionInspectionBehavior(MachineBehaviorStrategy):
 
 
 class AGVBehavior(MachineBehaviorStrategy):
+    """
+    Autonomous Mobile Robot behavior with realistic battery charge/discharge cycles.
+    SOC drains while running, recharges when docked at charging station.
+    """
+    # AGV charge cycle constants
+    _DISCHARGE_RATE_PER_SEC = 0.01   # % SOC lost per second while running
+    _CHARGE_RATE_PER_SEC   = 0.04   # % SOC gained per second while charging (4x faster)
+    _CHARGE_TARGET_SOC     = 90.0   # Stop charging when SOC reaches this level
+    _LOW_BATTERY_SOC       = 20.0   # Go to dock below this level
+
+    # Per-instance persistent state (keyed by profile id)
+    _soc_state: Dict[int, float] = {}     # current SOC per AGV
+    _charging: Dict[int, bool] = {}       # charging flag per AGV
+
     def calculate_telemetry(
         self, profile: MachineProfile, operating_state: OperatingState, load_pct: float,
         degradation: DegradationModel, time_elapsed_seconds: float, rng: random.Random
     ) -> Dict[str, Any]:
         deg_lvl = degradation.degradation_level
-        is_running = operating_state in (OperatingState.RUNNING, OperatingState.WARNING)
+        machine_key = id(profile)
+
+        # Initialise SOC state on first call
+        if machine_key not in AGVBehavior._soc_state:
+            AGVBehavior._soc_state[machine_key] = 85.0
+            AGVBehavior._charging[machine_key] = False
+
+        soc = AGVBehavior._soc_state[machine_key]
+        is_charging = AGVBehavior._charging[machine_key]
+
+        # State machine: decide charge vs drive
+        if soc <= AGVBehavior._LOW_BATTERY_SOC:
+            is_charging = True  # Must go to dock
+        elif soc >= AGVBehavior._CHARGE_TARGET_SOC:
+            is_charging = False  # Fully charged, resume mission
+
+        # Update SOC based on charge/discharge
+        if is_charging:
+            soc = min(AGVBehavior._CHARGE_TARGET_SOC, soc + AGVBehavior._CHARGE_RATE_PER_SEC)
+        else:
+            soc = max(0.0, soc - AGVBehavior._DISCHARGE_RATE_PER_SEC)
+
+        AGVBehavior._soc_state[machine_key] = soc
+        AGVBehavior._charging[machine_key] = is_charging
+
+        is_running = operating_state in (OperatingState.RUNNING, OperatingState.WARNING) and not is_charging
 
         spd = 1.5 * (load_pct / 50.0) if is_running else 0.0
         head = (90.0 + time_elapsed_seconds * 2.0) % 360.0 if is_running else 90.0
-        px = 12.5 + math.cos(math.radians(head)) * (time_elapsed_seconds * spd)
-        py = 45.2 + math.sin(math.radians(head)) * (time_elapsed_seconds * spd)
+        px = 12.5 + math.cos(math.radians(head)) * min(time_elapsed_seconds * spd, 500.0)
+        py = 45.2 + math.sin(math.radians(head)) * min(time_elapsed_seconds * spd, 500.0)
 
-        soc = max(0.0, 85.0 - (time_elapsed_seconds * 0.01))
-        volt = 48.0 * (soc / 100.0) + rng.uniform(-0.2, 0.2)
-        batt_temp = 32.0 + (spd * 3.0) + (deg_lvl * 0.1) if is_running else 22.0
+        volt = 48.0 * (soc / 100.0) + rng.gauss(0, 0.08)
+        batt_temp = 32.0 + (spd * 3.0) + (deg_lvl * 0.1) + rng.gauss(0, 0.3) if is_running else (
+            26.0 + rng.gauss(0, 0.2) if is_charging else 22.0
+        )
 
         mtr_spd = 1200.0 * (spd / 1.5) if is_running else 0.0
-        mtr_curr = 12.0 * (spd / 1.5) + (deg_lvl * 0.05) if is_running else 0.0
+        mtr_curr = 12.0 * (spd / 1.5) + (deg_lvl * 0.05) if is_running else (5.0 if is_charging else 0.0)
         dist = 4500.0 + (time_elapsed_seconds * spd)
 
-        dock = "CHARGING" if soc < 20.0 else "UNDOCKED"
+        dock = "CHARGING" if is_charging else "UNDOCKED"
         obs = "CLEAR" if rng.random() > 0.05 else "WARN"
         safety = "NORMAL" if obs == "CLEAR" else "SLOWDOWN"
 
@@ -421,7 +490,7 @@ class AGVBehavior(MachineBehaviorStrategy):
             "battery_temperature_c": round(batt_temp, 2),
             "motor_speed_rpm": round(mtr_spd, 2),
             "motor_current_a": round(mtr_curr, 2),
-            "active_job_id": "JOB_102",
+            "active_job_id": "JOB_102" if is_running else ("CHARGING" if is_charging else "IDLE"),
             "total_distance_m": round(dist, 2),
             "docking_state": dock,
             "obstacle_state": obs,
@@ -455,7 +524,8 @@ class ChillerBehavior(MachineBehaviorStrategy):
         return {
             "supply_temperature_c": round(sup_t, 2),
             "return_temperature_c": round(ret_t, 2),
-            "flow_rate_l_min": round(flow, 2),
+            # Key fixed: was 'flow_rate_l_min', now matches alert rule signal 'coolant_flow_rate_l_min'
+            "coolant_flow_rate_l_min": round(flow, 2),
             "compressor_state": comp_st,
             "compressor_current_a": round(comp_curr, 2),
             "compressor_load_pct": round(comp_load, 2),

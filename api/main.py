@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 
 from api.config import APIConfig
 from api.dependencies import get_api_config, get_db_engine
-from api.routes import health, factory, machines, telemetry, realtime, alerts, scenarios, ml
+from api.routes import health, factory, machines, telemetry, realtime, alerts, scenarios, ml, devices, jobs
 
 logging.basicConfig(
     level=logging.INFO,
@@ -72,6 +72,8 @@ def create_app() -> FastAPI:
     app.include_router(scenarios.router)
     app.include_router(scenarios.demo_router)
     app.include_router(ml.router)
+    app.include_router(devices.router)
+    app.include_router(jobs.router)
 
     return app
 

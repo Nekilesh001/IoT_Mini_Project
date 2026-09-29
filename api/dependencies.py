@@ -107,3 +107,37 @@ def get_ml_service():
         from ml.inference.service import MLInferenceService
         _ml_service = MLInferenceService()
     return _ml_service
+
+
+_device_mgmt_service = None
+
+
+def get_device_management_repository():
+    from device_management.repository import DeviceManagementRepository
+    session_factory = get_session_factory_dep()
+    return DeviceManagementRepository(session_factory)
+
+
+def get_device_management_service():
+    global _device_mgmt_service
+    if _device_mgmt_service is None:
+        from device_management.service import DeviceManagementService
+        from device_management.backends.local import (
+            LocalDeviceStateBackend,
+            LocalFleetBackend,
+            LocalJobBackend,
+            LocalAuditBackend,
+        )
+        repo = get_device_management_repository()
+        service = DeviceManagementService(
+            state_backend=LocalDeviceStateBackend(repo),
+            fleet_backend=LocalFleetBackend(repo),
+            job_backend=LocalJobBackend(repo),
+            audit_backend=LocalAuditBackend(repo),
+        )
+        # Ensure fleet is bootstrapped from profiles
+        profiles = get_factory_profiles()
+        service.bootstrap_fleet(profiles)
+        _device_mgmt_service = service
+    return _device_mgmt_service
+

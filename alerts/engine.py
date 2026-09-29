@@ -32,6 +32,9 @@ class AlertEngine:
         self._last_trigger_times: Dict[str, float] = {}
         # Callback listeners for real-time alert event delivery
         self._listeners: List[Callable[[Dict[str, Any]], None]] = []
+        # Restore cooldown state from currently active alerts to prevent
+        # duplicate alert creation after a worker restart.
+        self._restore_cooldowns_from_db()
 
     @property
     def repository(self) -> AlertRepository:
@@ -47,6 +50,37 @@ class AlertEngine:
     def remove_listener(self, listener: Callable[[Dict[str, Any]], None]) -> None:
         if listener in self._listeners:
             self._listeners.remove(listener)
+
+    def _restore_cooldowns_from_db(self) -> None:
+        """
+        Repopulate in-memory cooldown timestamps from currently OPEN alerts in the DB.
+        Called once at startup to prevent duplicate alerts after a worker restart.
+        """
+        try:
+            active_alerts = self._repository.get_all_active_alerts()
+            restored = 0
+            for alert in active_alerts:
+                alert_key = f"{alert.machine_id}:{alert.rule_id}"
+                if alert.triggered_at:
+                    try:
+                        if isinstance(alert.triggered_at, datetime):
+                            ref_ts = alert.triggered_at.timestamp()
+                        else:
+                            ref_ts = datetime.fromisoformat(
+                                str(alert.triggered_at).replace("Z", "+00:00")
+                            ).timestamp()
+                    except Exception:
+                        ref_ts = datetime.now(timezone.utc).timestamp()
+                else:
+                    ref_ts = datetime.now(timezone.utc).timestamp()
+                self._last_trigger_times[alert_key] = ref_ts
+                restored += 1
+            if restored:
+                logger.info(
+                    f"[AlertEngine] Restored cooldown state for {restored} active alert(s) from DB."
+                )
+        except Exception as ex:
+            logger.warning(f"[AlertEngine] Could not restore cooldowns from DB: {ex}")
 
     def _notify_listeners(self, event_type: str, alert: AlertRecord) -> None:
         payload = {

@@ -31,6 +31,7 @@ from ml.inference.metrics import InferenceLatencyTracker
 from ml.inference.service import MLInferenceService
 from ml.inference.alert_adapter import MLAlertAdapter
 from ml.inference.onnx_exporter import ONNXModelExporter
+from ml.inference.window_aggregator import WindowedAnomalyAggregator, MachineAnomalyWindow
 
 __all__ = [
     "InferenceConfig",
