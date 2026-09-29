@@ -71,7 +71,7 @@ The baseline factory models **12 heterogeneous simulated machines**:
 
 ## Development Status & Roadmap
 
-Current Status: **Phase 6 — Fault Injection Framework & Rule-Based Alerts (COMPLETED)**
+Current Status: **Phase 7 — ML Dataset Collection, Training & Model Evaluation (COMPLETED)**
 
 - **Phase 0 — Architecture & Control Docs**: Completed.
 - **Phase 1 — Factory Simulation Core**: Completed. Run local demo via `python -m simulator` or test suite via `python -m pytest tests/simulator/`.
@@ -80,7 +80,35 @@ Current Status: **Phase 6 — Fault Injection Framework & Rule-Based Alerts (COM
 - **Phase 4 — Local Storage, MQTT Event Bus & Buffering**: Completed. Run local storage demo via `python -m storage.demo` or test suite via `python -m pytest tests/storage/ tests/event_bus/ tests/integration/`.
 - **Phase 5 — FastAPI Backend & React Dashboard**: Completed. Run API backend via `python -m api`, frontend via `cd dashboard/react-app && npm run dev`, end-to-end demo via `python -m api.demo`, or test suite via `python -m pytest tests/api/`.
 - **Phase 6 — Fault Injection Framework & Rule-Based Alerts**: Completed. Run alert & fault demo via `python -m alerts.demo` or test suite via `python -m pytest tests/alerts/ tests/integration/`.
-- **Phase 7 — ML Dataset Collection, Training & Model Evaluation**: Next Target.
+- **Phase 7 — ML Dataset Collection, Training & Model Evaluation**: Completed. Run ML demo via `python -m ml.demo` or individual training pipelines (`python -m ml.pipelines.build_dataset`, `python -m ml.pipelines.train_anomaly`, `python -m ml.pipelines.train_rul`).
+- **Phase 8 — Edge ML Anomaly & Predictive Inference Engine**: Next Target.
+
+### Running ML Pipelines & Experiment Tracking
+
+1. **Build Dataset & Feature Manifest**:
+   ```bash
+   python -m ml.pipelines.build_dataset
+   ```
+
+2. **Train Unsupervised Anomaly Detection (Isolation Forest)**:
+   ```bash
+   python -m ml.pipelines.train_anomaly
+   ```
+
+3. **Train RUL Predictive Maintenance Regressor (HistGradientBoosting)**:
+   ```bash
+   python -m ml.pipelines.train_rul
+   ```
+
+4. **Run End-to-End ML Pipeline Verification Demo**:
+   ```bash
+   python -m ml.demo
+   ```
+
+5. **Launch Local MLflow Tracking UI**:
+   ```bash
+   mlflow ui --backend-store-uri ./mlruns --port 5000
+   ```
 
 ### Running Local Infrastructure & Operational Dashboard
 
@@ -131,6 +159,16 @@ For detailed architectural details and documentation:
 - [docs/phase6/rule-engine.md](docs/phase6/rule-engine.md) — Phase 6 rule evaluator and catalog.
 - [docs/phase6/alert-lifecycle.md](docs/phase6/alert-lifecycle.md) — Phase 6 alert lifecycle and state machine.
 - [docs/phase6/dashboard-alerts.md](docs/phase6/dashboard-alerts.md) — Phase 6 React alert console and components.
+- [docs/phase7/ml-architecture.md](docs/phase7/ml-architecture.md) — Phase 7 ML architecture & pipeline overview.
+- [docs/phase7/dataset-generation.md](docs/phase7/dataset-generation.md) — Phase 7 dataset collectors and simulation generator.
+- [docs/phase7/feature-engineering.md](docs/phase7/feature-engineering.md) — Phase 7 temporal features and signal whitelisting.
+- [docs/phase7/leakage-prevention.md](docs/phase7/leakage-prevention.md) — Phase 7 ground-truth isolation & anti-leakage controls.
+- [docs/phase7/anomaly-detection.md](docs/phase7/anomaly-detection.md) — Phase 7 unsupervised Isolation Forest model.
+- [docs/phase7/rul-regression.md](docs/phase7/rul-regression.md) — Phase 7 HistGradientBoosting RUL model.
+- [docs/phase7/mlflow-tracking.md](docs/phase7/mlflow-tracking.md) — Phase 7 local MLflow experiment tracking.
+- [docs/phase7/model-export.md](docs/phase7/model-export.md) — Phase 7 model binary & metadata export.
+- [docs/phase7/evaluation-results.md](docs/phase7/evaluation-results.md) — Phase 7 evaluation benchmarks and results.
+- [docs/phase7/reproducibility.md](docs/phase7/reproducibility.md) — Phase 7 reproducibility and command execution guide.
 
 ---
 

@@ -81,3 +81,19 @@ local_buffer.db
 .DS_Store
 Thumbs.db
 
+# Machine Learning & Data Artifacts (Phase 7)
+mlruns/
+.mlflow/
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/features/*
+!data/features/.gitkeep
+data/models/*
+!data/models/.gitkeep
+*.joblib
+*.pkl
+*.parquet
+
+

@@ -1,0 +1,13 @@
+{
+  "num_samples": 720,
+  "mean_absolute_error_seconds": 8.33,
+  "root_mean_squared_error_seconds": 23.19,
+  "r2_score": 0.9997,
+  "median_absolute_error_seconds": 0.27,
+  "target_mean_seconds": 3000.0,
+  "target_std_seconds": 1341.64,
+  "baseline_mae_seconds": 600.0,
+  "baseline_rmse_seconds": 1469.69,
+  "baseline_r2": -0.2,
+  "mae_improvement_pct": 98.61
+}
