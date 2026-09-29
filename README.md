@@ -71,7 +71,7 @@ The baseline factory models **12 heterogeneous simulated machines**:
 
 ## Development Status & Roadmap
 
-Current Status: **Phase 5 — FastAPI Backend Service & React Operations Dashboard (COMPLETED)**
+Current Status: **Phase 6 — Fault Injection Framework & Rule-Based Alerts (COMPLETED)**
 
 - **Phase 0 — Architecture & Control Docs**: Completed.
 - **Phase 1 — Factory Simulation Core**: Completed. Run local demo via `python -m simulator` or test suite via `python -m pytest tests/simulator/`.
@@ -79,7 +79,8 @@ Current Status: **Phase 5 — FastAPI Backend Service & React Operations Dashboa
 - **Phase 3 — Canonical Telemetry & Edge Ingestion**: Completed. Run local edge demo via `python -m edge.demo` or test suite via `python -m pytest tests/edge/`.
 - **Phase 4 — Local Storage, MQTT Event Bus & Buffering**: Completed. Run local storage demo via `python -m storage.demo` or test suite via `python -m pytest tests/storage/ tests/event_bus/ tests/integration/`.
 - **Phase 5 — FastAPI Backend & React Dashboard**: Completed. Run API backend via `python -m api`, frontend via `cd dashboard/react-app && npm run dev`, end-to-end demo via `python -m api.demo`, or test suite via `python -m pytest tests/api/`.
-- **Phase 6 — Fault Injection Framework & Rule-Based Alerts**: Next Target.
+- **Phase 6 — Fault Injection Framework & Rule-Based Alerts**: Completed. Run alert & fault demo via `python -m alerts.demo` or test suite via `python -m pytest tests/alerts/ tests/integration/`.
+- **Phase 7 — ML Dataset Collection, Training & Model Evaluation**: Next Target.
 
 ### Running Local Infrastructure & Operational Dashboard
 
@@ -99,6 +100,8 @@ Current Status: **Phase 5 — FastAPI Backend Service & React Operations Dashboa
    ```
    - OpenAPI Docs: `http://localhost:8000/docs`
    - API Base: `http://localhost:8000/api`
+   - Active Alerts: `http://localhost:8000/api/alerts/active`
+   - Realtime Events: `http://localhost:8000/api/realtime/events`
 
 4. **Start React Operations Dashboard**:
    ```bash
@@ -107,10 +110,11 @@ Current Status: **Phase 5 — FastAPI Backend Service & React Operations Dashboa
    npm run dev
    ```
    - Dashboard UI: `http://localhost:5173`
+   - Alerts Console: `http://localhost:5173/alerts`
 
-5. **Run One-Shot End-to-End API/SSE Verification Demo**:
+5. **Run Phase 6 Fault-Injection & Alerting Verification Demo**:
    ```bash
-   python -m api.demo
+   python -m alerts.demo
    ```
 
 For detailed architectural details and documentation:
@@ -123,6 +127,10 @@ For detailed architectural details and documentation:
 - [docs/phase4/event-bus-architecture.md](docs/phase4/event-bus-architecture.md) — Phase 4 event bus and storage architecture.
 - [docs/phase5/api-architecture.md](docs/phase5/api-architecture.md) — Phase 5 FastAPI backend and streaming architecture.
 - [docs/phase5/dashboard-architecture.md](docs/phase5/dashboard-architecture.md) — Phase 5 React operations console.
+- [docs/phase6/fault-architecture.md](docs/phase6/fault-architecture.md) — Phase 6 fault injection & alerting architecture.
+- [docs/phase6/rule-engine.md](docs/phase6/rule-engine.md) — Phase 6 rule evaluator and catalog.
+- [docs/phase6/alert-lifecycle.md](docs/phase6/alert-lifecycle.md) — Phase 6 alert lifecycle and state machine.
+- [docs/phase6/dashboard-alerts.md](docs/phase6/dashboard-alerts.md) — Phase 6 React alert console and components.
 
 ---
 

@@ -27,6 +27,9 @@ export function useMachineHistory(machineId: string, params: HistoryParams = {})
       if (event.machine_id === machineId) {
         setHistory((prev) => {
           if (!prev) return prev;
+          const lastSeq = prev.records.length > 0 ? prev.records[prev.records.length - 1].sequence : -1;
+          if (event.sequence <= lastSeq) return prev;
+
           const newRecord: TelemetryRecord = {
             event_id: event.event_id,
             schema_version: "1.0.0",

@@ -1,13 +1,16 @@
-import React from "react";
 import { useFactorySummary } from "../hooks/useFactorySummary";
 import { useMachines } from "../hooks/useMachines";
+import { useAlerts } from "../hooks/useAlerts";
 import { MachineCard } from "../components/MachineCard";
 import { MetricCard } from "../components/MetricCard";
-import { Activity, CheckCircle2, AlertTriangle, AlertOctagon, Wrench, PowerOff, Database } from "lucide-react";
+import { ActiveAlertsPanel } from "../components/ActiveAlertsPanel";
+import { Activity, CheckCircle2, AlertTriangle, AlertOctagon, Wrench, PowerOff, Database, ShieldAlert } from "lucide-react";
 
 export const OverviewPage: React.FC = () => {
   const { summary, loading: summaryLoading, error: summaryError, refresh: refreshSummary } = useFactorySummary();
-  const { machines, loading: machinesLoading, error: machinesError, realtimeStatus } = useMachines();
+  const { machines, loading: machinesLoading, error: machinesError } = useMachines();
+  const { activeAlerts, summary: alertSummary, acknowledgeAlert, resolveAlert } = useAlerts();
+
 
   if (summaryLoading && machinesLoading) {
     return (
@@ -75,12 +78,31 @@ export const OverviewPage: React.FC = () => {
       >
         <MetricCard label="Total Machines" value={summary?.total_machines || 12} accentColor="#38bdf8" />
         <MetricCard label="Running" value={states.running} accentColor="#10b981" description="Active production" />
+        <MetricCard label="Active Alerts" value={alertSummary?.active_total || 0} accentColor={alertSummary && alertSummary.active_total > 0 ? "#ef4444" : "#10b981"} description={alertSummary && alertSummary.active_total > 0 ? `${alertSummary.critical_count} Critical` : "Normal operation"} />
         <MetricCard label="Warnings" value={health.warning} accentColor="#f97316" description="Degradation detected" />
         <MetricCard label="Faults / Critical" value={health.critical} accentColor="#ef4444" description="Immediate attention" />
-        <MetricCard label="Maintenance / Idle" value={states.maintenance + states.idle} accentColor="#a855f7" description="Standby / Service" />
       </div>
 
+      {/* Active Operational Alarms */}
+      <section>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#f8fafc", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+            <ShieldAlert size={18} color={activeAlerts.length > 0 ? "#f87171" : "#10b981"} /> Live Operational Alarms
+          </h2>
+          <span style={{ fontSize: "12px", color: "#64748b" }}>
+            Real-time rule-based threshold evaluation
+          </span>
+        </div>
+        <ActiveAlertsPanel
+          alerts={activeAlerts}
+          summary={alertSummary}
+          onAcknowledge={acknowledgeAlert}
+          onResolve={resolveAlert}
+        />
+      </section>
+
       {/* Machine Status Grid */}
+
       <section>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#f8fafc", margin: 0 }}>

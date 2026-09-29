@@ -220,27 +220,41 @@ export const TimeSeriesChart: React.FC<TimeSeriesChartProps> = ({
             })}
 
             {/* X-axis labels */}
-            {chartData.map((d, i) => {
-              // Show label at beginning, 1/3, 2/3, and end
-              const step = Math.max(1, Math.floor(chartData.length / 4));
-              if (i % step === 0 || i === chartData.length - 1) {
-                const x = scaleX(i);
+            {(() => {
+              if (chartData.length === 0) return null;
+              const len = chartData.length;
+              const indices = len === 1
+                ? [0]
+                : Array.from(new Set([
+                    0,
+                    Math.floor(len * 0.33),
+                    Math.floor(len * 0.66),
+                    len - 1,
+                  ])).sort((a, b) => a - b);
+
+              return indices.map((idx, i) => {
+                const d = chartData[idx];
+                if (!d) return null;
+                const isFirst = i === 0;
+                const isLast = i === indices.length - 1;
+                const anchor = isFirst ? "start" : isLast ? "end" : "middle";
+                const x = scaleX(idx);
+
                 return (
                   <text
-                    key={i}
+                    key={idx}
                     x={x}
                     y={height - 12}
                     fill="#64748b"
                     fontSize="10"
-                    textAnchor="middle"
+                    textAnchor={anchor}
                     fontFamily="monospace"
                   >
                     {d.timeStr}
                   </text>
                 );
-              }
-              return null;
-            })}
+              });
+            })()}
 
             {/* Signal Curves */}
             {selectedSignals.map((sig) => {

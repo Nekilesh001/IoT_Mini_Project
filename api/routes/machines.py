@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from api.dependencies import get_telemetry_repository, get_factory_profiles, get_api_config
+from api.dependencies import get_telemetry_repository, get_factory_profiles, get_api_config, get_alert_repository
 from api.schemas.machine import MachineOverviewItem, MachineDetailResponse
 from api.schemas.telemetry import TelemetryRecordItem, TelemetryHistoryResponse
 from api.services.factory_service import FactoryService
@@ -103,3 +103,19 @@ def get_machine_telemetry_alias(
         repo=repo,
         profiles=profiles
     )
+
+
+@router.get("/{machine_id}/alerts", summary="Get active and historical alerts for a specific machine")
+def get_machine_alerts(
+    machine_id: str,
+    limit: int = Query(50, ge=1, le=500, description="Max alerts to return"),
+    profiles=Depends(get_factory_profiles),
+    alert_repo=Depends(get_alert_repository),
+):
+    from alerts.service import AlertService
+    if machine_id not in profiles:
+        raise HTTPException(status_code=404, detail=f"Machine '{machine_id}' not found")
+    service = AlertService(alert_repo)
+    return service.list_machine_alerts(machine_id, limit=limit)
+
+

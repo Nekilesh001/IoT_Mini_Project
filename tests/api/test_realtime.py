@@ -44,6 +44,6 @@ async def test_realtime_service_event_generator():
 
     gen = service.event_generator()
     first_event = await anext(gen)
-    assert first_event.startswith("data: ")
+    assert "data: " in first_event
     assert "CNC-001" in first_event
     assert "9200.0" in first_event

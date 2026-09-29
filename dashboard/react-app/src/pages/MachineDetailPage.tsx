@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useMachineDetail } from "../hooks/useMachineDetail";
 import { useMachineHistory } from "../hooks/useMachineHistory";
@@ -7,11 +7,43 @@ import { QualityBadge } from "../components/QualityBadge";
 import { ProtocolBadge } from "../components/ProtocolBadge";
 import { MetricCard } from "../components/MetricCard";
 import { TimeSeriesChart } from "../components/TimeSeriesChart";
-import { ArrowLeft, Clock, MapPin, Radio, Hash, Activity } from "lucide-react";
+import { AlertCard } from "../components/AlertCard";
+import { alertsApi } from "../api/alerts";
+import { AlertItem } from "../types";
+import { ArrowLeft, Clock, MapPin, Radio, Hash, Activity, ShieldAlert } from "lucide-react";
 
 export const MachineDetailPage: React.FC = () => {
   const { machineId } = useParams<{ machineId: string }>();
   const [range, setRange] = useState<string>("15m");
+  const [machineAlerts, setMachineAlerts] = useState<AlertItem[]>([]);
+
+  const fetchAlerts = async () => {
+    if (!machineId) return;
+    try {
+      const data = await alertsApi.getMachineAlerts(machineId, 20);
+      setMachineAlerts(data);
+    } catch (e) {
+      console.error("Failed to load machine alerts", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchAlerts();
+    const intv = setInterval(fetchAlerts, 2000);
+    return () => clearInterval(intv);
+  }, [machineId]);
+
+  const handleAck = async (alertId: string) => {
+    await alertsApi.acknowledgeAlert(alertId, "operator");
+    fetchAlerts();
+  };
+
+  const handleResolve = async (alertId: string, notes?: string) => {
+    await alertsApi.resolveAlert(alertId, notes);
+    fetchAlerts();
+  };
+
+
 
   const { machine, loading: machineLoading, error: machineError } = useMachineDetail(machineId || "");
   const { history, loading: historyLoading, error: historyError } = useMachineHistory(machineId || "", { limit: 100 });
@@ -174,11 +206,42 @@ export const MachineDetailPage: React.FC = () => {
         </section>
       )}
 
+      {/* Active & Historical Operational Alerts for this machine */}
+      <section>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#f8fafc", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+            <ShieldAlert size={18} color={machineAlerts.some((a) => a.status !== "RESOLVED") ? "#f87171" : "#38bdf8"} />
+            Machine Operational Alerts ({machineAlerts.length})
+          </h2>
+          <span style={{ fontSize: "12px", color: "#64748b" }}>
+            Rule-based threshold alerts for {machine.machine_id}
+          </span>
+        </div>
+
+        {machineAlerts.length === 0 ? (
+          <div style={{ background: "rgba(16, 185, 129, 0.05)", border: "1px solid rgba(16, 185, 129, 0.2)", borderRadius: "10px", padding: "16px 20px", color: "#34d399", fontSize: "13px" }}>
+            ✓ No threshold violations or active alerts for this equipment node.
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            {machineAlerts.map((alert) => (
+              <AlertCard
+                key={alert.alert_id}
+                alert={alert}
+                onAcknowledge={handleAck}
+                onResolve={handleResolve}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
       {/* Historical Telemetry Chart */}
       <section>
         <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#f8fafc", marginBottom: "14px" }}>
           Historical Telemetry Trends
         </h2>
+
         <TimeSeriesChart
           records={history?.records || []}
           availableSignals={history?.available_signals || machine.signals.map((s) => s.name)}
