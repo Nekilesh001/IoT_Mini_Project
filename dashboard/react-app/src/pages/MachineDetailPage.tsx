@@ -9,15 +9,17 @@ import { MetricCard } from "../components/MetricCard";
 import { TimeSeriesChart } from "../components/TimeSeriesChart";
 import { AlertCard } from "../components/AlertCard";
 import { alertsApi } from "../api/alerts";
-import { AlertItem } from "../types";
+import { fetchMachineLatestML } from "../api/ml";
+import { AlertItem, MLInferenceResult } from "../types";
 import { ArrowLeft, Clock, MapPin, Radio, Hash, Activity, ShieldAlert } from "lucide-react";
 
 export const MachineDetailPage: React.FC = () => {
   const { machineId } = useParams<{ machineId: string }>();
   const [range, setRange] = useState<string>("15m");
   const [machineAlerts, setMachineAlerts] = useState<AlertItem[]>([]);
+  const [machineMl, setMachineMl] = useState<MLInferenceResult | null>(null);
 
-  const fetchAlerts = async () => {
+  const fetchAlertsAndML = async () => {
     if (!machineId) return;
     try {
       const data = await alertsApi.getMachineAlerts(machineId, 20);
@@ -25,22 +27,28 @@ export const MachineDetailPage: React.FC = () => {
     } catch (e) {
       console.error("Failed to load machine alerts", e);
     }
+    try {
+      const mlData = await fetchMachineLatestML(machineId);
+      setMachineMl(mlData);
+    } catch {
+      // ML might be warming up
+    }
   };
 
   useEffect(() => {
-    fetchAlerts();
-    const intv = setInterval(fetchAlerts, 2000);
+    fetchAlertsAndML();
+    const intv = setInterval(fetchAlertsAndML, 2000);
     return () => clearInterval(intv);
   }, [machineId]);
 
   const handleAck = async (alertId: string) => {
     await alertsApi.acknowledgeAlert(alertId, "operator");
-    fetchAlerts();
+    fetchAlertsAndML();
   };
 
   const handleResolve = async (alertId: string, notes?: string) => {
     await alertsApi.resolveAlert(alertId, notes);
-    fetchAlerts();
+    fetchAlertsAndML();
   };
 
 
@@ -184,6 +192,69 @@ export const MachineDetailPage: React.FC = () => {
             ))}
           </div>
         )}
+      </section>
+
+      {/* Edge ML & Predictive Maintenance Panel */}
+      <section>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#f8fafc", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+            <Activity size={18} color="#38bdf8" /> Edge ML Predictive Maintenance
+          </h2>
+          <span style={{ fontSize: "12px", color: "#64748b" }}>
+            Unsupervised Isolation Forest + HistGradientBoosting RUL Regressor
+          </span>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px" }}>
+          {/* Anomaly Risk Card */}
+          <div style={{ background: "#1e293b", padding: "16px 20px", borderRadius: "10px", border: "1px solid #334155" }}>
+            <div style={{ fontSize: "12px", color: "#94a3b8", fontWeight: 600 }}>ANOMALY RISK SCORE</div>
+            <div style={{ fontSize: "24px", fontWeight: 800, color: (machineMl?.anomaly_score ?? 0) > 0.6 ? "#f87171" : "#4ade80", marginTop: "4px" }}>
+              {machineMl?.anomaly_score !== undefined && machineMl?.anomaly_score !== null ? `${(machineMl.anomaly_score * 100).toFixed(1)}%` : "0.0%"}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "8px" }}>
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  padding: "2px 8px",
+                  borderRadius: "9999px",
+                  background: machineMl?.anomaly_label === "ANOMALOUS" ? "rgba(239, 68, 68, 0.2)" : "rgba(34, 197, 94, 0.15)",
+                  color: machineMl?.anomaly_label === "ANOMALOUS" ? "#f87171" : "#4ade80",
+                }}
+              >
+                {machineMl?.anomaly_label || "NORMAL"}
+              </span>
+              <span style={{ fontSize: "11px", color: "#64748b" }}>
+                Raw: {machineMl?.raw_anomaly_score?.toFixed(3) || "0.000"}
+              </span>
+            </div>
+          </div>
+
+          {/* Predicted RUL Card */}
+          <div style={{ background: "#1e293b", padding: "16px 20px", borderRadius: "10px", border: "1px solid #334155" }}>
+            <div style={{ fontSize: "12px", color: "#94a3b8", fontWeight: 600 }}>PREDICTED REMAINING USEFUL LIFE</div>
+            <div style={{ fontSize: "24px", fontWeight: 800, color: (machineMl?.predicted_rul_seconds ?? 3600) < 1800 ? "#f87171" : "#f8fafc", marginTop: "4px" }}>
+              {machineMl?.predicted_rul_seconds !== undefined && machineMl?.predicted_rul_seconds !== null
+                ? `${machineMl.predicted_rul_minutes?.toFixed(1)} min`
+                : "Warming up..."}
+            </div>
+            <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "8px" }}>
+              Seconds: {machineMl?.predicted_rul_seconds?.toFixed(0) || "3600"}s | Hours: {machineMl?.predicted_rul_hours?.toFixed(2) || "1.00"}h
+            </div>
+          </div>
+
+          {/* Inference Latency & Engine Card */}
+          <div style={{ background: "#1e293b", padding: "16px 20px", borderRadius: "10px", border: "1px solid #334155" }}>
+            <div style={{ fontSize: "12px", color: "#94a3b8", fontWeight: 600 }}>EDGE INFERENCE LATENCY</div>
+            <div style={{ fontSize: "24px", fontWeight: 800, color: "#38bdf8", marginTop: "4px" }}>
+              {machineMl?.latency_ms?.total_inference_ms ? `${machineMl.latency_ms.total_inference_ms.toFixed(2)}ms` : "< 1.0ms"}
+            </div>
+            <div style={{ fontSize: "11px", color: "#64748b", marginTop: "8px" }}>
+              Backend: <strong style={{ color: "#38bdf8" }}>{machineMl?.runtime_backend || "SKLEARN"}</strong> | 1019 Features
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Derived Physical Metrics (if present) */}

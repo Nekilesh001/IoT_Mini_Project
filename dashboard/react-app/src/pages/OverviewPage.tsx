@@ -1,15 +1,27 @@
+import { useState, useEffect } from "react";
 import { useFactorySummary } from "../hooks/useFactorySummary";
 import { useMachines } from "../hooks/useMachines";
 import { useAlerts } from "../hooks/useAlerts";
+import { fetchMLStatus } from "../api/ml";
+import { MLSystemStatus } from "../types";
 import { MachineCard } from "../components/MachineCard";
 import { MetricCard } from "../components/MetricCard";
 import { ActiveAlertsPanel } from "../components/ActiveAlertsPanel";
-import { Activity, CheckCircle2, AlertTriangle, AlertOctagon, Wrench, PowerOff, Database, ShieldAlert } from "lucide-react";
+import { Activity, CheckCircle2, AlertTriangle, AlertOctagon, Wrench, PowerOff, Database, ShieldAlert, Brain } from "lucide-react";
 
 export const OverviewPage: React.FC = () => {
   const { summary, loading: summaryLoading, error: summaryError, refresh: refreshSummary } = useFactorySummary();
   const { machines, loading: machinesLoading, error: machinesError } = useMachines();
   const { activeAlerts, summary: alertSummary, acknowledgeAlert, resolveAlert } = useAlerts();
+  const [mlStatus, setMlStatus] = useState<MLSystemStatus | null>(null);
+
+  useEffect(() => {
+    fetchMLStatus().then(setMlStatus).catch(() => {});
+    const interval = setInterval(() => {
+      fetchMLStatus().then(setMlStatus).catch(() => {});
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
 
 
   if (summaryLoading && machinesLoading) {
@@ -72,15 +84,16 @@ export const OverviewPage: React.FC = () => {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
           gap: "16px",
         }}
       >
         <MetricCard label="Total Machines" value={summary?.total_machines || 12} accentColor="#38bdf8" />
         <MetricCard label="Running" value={states.running} accentColor="#10b981" description="Active production" />
         <MetricCard label="Active Alerts" value={alertSummary?.active_total || 0} accentColor={alertSummary && alertSummary.active_total > 0 ? "#ef4444" : "#10b981"} description={alertSummary && alertSummary.active_total > 0 ? `${alertSummary.critical_count} Critical` : "Normal operation"} />
-        <MetricCard label="Warnings" value={health.warning} accentColor="#f97316" description="Degradation detected" />
-        <MetricCard label="Faults / Critical" value={health.critical} accentColor="#ef4444" description="Immediate attention" />
+        <MetricCard label="ML Anomalies" value={mlStatus?.fleet_summary?.active_anomalous_machines?.length || 0} accentColor={mlStatus?.fleet_summary?.active_anomalous_machines?.length ? "#f59e0b" : "#10b981"} description="Isolation Forest" />
+        <MetricCard label="Critical RUL" value={mlStatus?.fleet_summary?.low_rul_machines?.length || 0} accentColor={mlStatus?.fleet_summary?.low_rul_machines?.length ? "#ef4444" : "#10b981"} description="<30m Remaining" />
+        <MetricCard label="ML Latency" value={mlStatus?.metrics?.total_inference_ms?.mean ? `${mlStatus.metrics.total_inference_ms.mean}ms` : "0.0ms"} accentColor="#818cf8" description={mlStatus?.runtime_backend || "SKLEARN"} />
       </div>
 
       {/* Active Operational Alarms */}

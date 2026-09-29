@@ -172,3 +172,92 @@ export interface FaultScenario {
   end_time?: string | null;
 }
 
+export type MLAnomalyLabel = "NORMAL" | "ANOMALOUS" | "UNKNOWN";
+export type MLInferenceStatus = "NOT_READY" | "READY" | "DEGRADED" | "ERROR";
+
+export interface MLInferenceResult {
+  result_id: string;
+  machine_id: string;
+  machine_type: string;
+  event_time?: string | null;
+  inference_time?: string | null;
+  anomaly_score?: number | null;
+  raw_anomaly_score?: number | null;
+  anomaly_label: MLAnomalyLabel;
+  predicted_rul_seconds?: number | null;
+  predicted_rul_minutes?: number | null;
+  predicted_rul_hours?: number | null;
+  anomaly_model_name?: string | null;
+  anomaly_model_version?: string | null;
+  rul_model_name?: string | null;
+  rul_model_version?: string | null;
+  feature_manifest_version?: string;
+  feature_count?: number;
+  runtime_backend: string;
+  status: MLInferenceStatus;
+  latency_ms: {
+    feature_generation_ms: number;
+    anomaly_inference_ms: number;
+    rul_inference_ms: number;
+    total_inference_ms: number;
+  };
+  error_code?: string | null;
+  error_message?: string | null;
+}
+
+export interface MLModelInfo {
+  model_name: string;
+  model_type: string;
+  version: string;
+  num_features: number;
+  loaded_at: string;
+  runtime_backend: string;
+  hyperparameters?: Record<string, any>;
+}
+
+export interface MLLatencyStats {
+  count: number;
+  mean: number;
+  median: number;
+  p95: number;
+  max: number;
+}
+
+export interface MLMetricsSummary {
+  total_inferences: number;
+  successful_inferences: number;
+  failed_inferences: number;
+  success_rate_pct: number;
+  feature_generation_ms: MLLatencyStats;
+  anomaly_inference_ms: MLLatencyStats;
+  rul_inference_ms: MLLatencyStats;
+  total_inference_ms: MLLatencyStats;
+}
+
+export interface MLSystemStatus {
+  enabled: boolean;
+  initialized: boolean;
+  runtime_backend: string;
+  onnx_enabled: boolean;
+  min_warmup_samples: number;
+  anomaly_model: {
+    name: string;
+    version: string;
+    loaded: boolean;
+  };
+  rul_model: {
+    name: string;
+    version: string;
+    loaded: boolean;
+  };
+  active_machine_buffers: string[];
+  metrics: MLMetricsSummary;
+  fleet_summary?: {
+    total_inferences: number;
+    anomalous_inferences_total: number;
+    monitored_machines_count: number;
+    active_anomalous_machines: string[];
+    low_rul_machines: string[];
+  };
+}
+

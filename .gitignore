@@ -95,5 +95,6 @@ data/models/*
 *.joblib
 *.pkl
 *.parquet
+*.onnx
 
 

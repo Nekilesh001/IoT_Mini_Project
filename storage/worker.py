@@ -23,7 +23,7 @@ from protocols.manager import FactoryProtocolManager
 from simulator.runtime.factory_runtime import FactorySimulator
 from storage.config import StorageConfig
 from storage.database import get_engine, get_session_factory, init_db
-from storage.repository import TelemetryRepository
+from storage.repository import TelemetryRepository, MLInferenceRepository
 from alerts.models import AlertRecord
 from alerts.repository import AlertRepository
 from alerts.engine import AlertEngine
@@ -31,6 +31,9 @@ from alerts.rules import create_default_rules
 from scenarios.fault_scenarios import FaultLifecycleState
 from scenarios.manager import FaultScenarioManager
 from scenarios.repository import ScenarioStateRepository
+from ml.inference.service import MLInferenceService
+from ml.inference.alert_adapter import MLAlertAdapter
+from ml.inference.models import InferenceStatus
 
 logging.basicConfig(
     level=logging.INFO,
@@ -42,11 +45,13 @@ logger = logging.getLogger("storage.worker")
 def run_worker():
     db_url = os.getenv("DATABASE_URL", StorageConfig().database_url)
     poll_interval = float(os.getenv("WORKER_POLL_INTERVAL", "1.0"))
+    ml_enabled = os.getenv("ML_INFERENCE_ENABLED", "true").lower() in ("true", "1", "yes")
 
     print("=" * 80)
     print(" SMART FACTORY — CONTINUOUS SIMULATION & INGESTION WORKER")
     print(f" Database URL: {db_url}")
     print(f" Loop Interval: {poll_interval}s")
+    print(f" ML Inference: {'ENABLED' if ml_enabled else 'DISABLED'}")
     print("=" * 80)
 
     # 1. Initialize Database & Repositories
@@ -54,11 +59,16 @@ def run_worker():
     init_db(engine)
     session_factory = get_session_factory(engine)
     repository = TelemetryRepository(session_factory)
+    ml_repository = MLInferenceRepository(session_factory)
     alert_repository = AlertRepository(session_factory)
     alert_engine = AlertEngine(rules=create_default_rules(), repository=alert_repository)
+    ml_alert_adapter = MLAlertAdapter(alert_repository)
     scenario_repository = ScenarioStateRepository(session_factory)
 
-    # 2. Initialize Simulator, Scenarios & Protocols
+    # 2. Initialize ML Inference Service
+    ml_service = MLInferenceService() if ml_enabled else None
+
+    # 3. Initialize Simulator, Scenarios & Protocols
     factory = FactorySimulator(seed=42)
     scenario_mgr = FaultScenarioManager(factory=factory)
     profiles = {m.machine_id: m.profile for m in factory.get_all_machines()}
@@ -67,7 +77,7 @@ def run_worker():
     protocol_mgr.register_simulator(factory)
     edge_service = EdgeIngestionService(profiles=profiles)
 
-    # 3. Start services
+    # 4. Start services
     protocol_mgr.start_all()
     factory.start()
 
@@ -85,7 +95,7 @@ def run_worker():
         pass
 
     step_count = 0
-    print("[StorageWorker] Running continuous ingestion & alerting loop. Press Ctrl+C to stop.")
+    print("[StorageWorker] Running continuous ingestion, alerting & ML inference loop. Press Ctrl+C to stop.")
 
     try:
         while running:
@@ -121,21 +131,34 @@ def run_worker():
             readings = protocol_mgr.read_all_adapters()
             persisted = 0
             new_alerts = 0
+            ml_inferences_count = 0
             for r in readings:
                 res = edge_service.ingest_reading(r)
                 if res.status == IngestionStatus.ACCEPTED and res.canonical_telemetry:
                     if repository.insert(res.canonical_telemetry):
                         persisted += 1
-                    # Evaluate operational alert rules
+
+                    # Evaluate rule-based operational alert rules
                     triggered = alert_engine.process_telemetry(res.canonical_telemetry)
                     if triggered:
                         new_alerts += len(triggered)
 
+                    # Execute Edge ML Inference pipeline
+                    if ml_service is not None:
+                        ml_res = ml_service.infer(res.canonical_telemetry)
+                        if ml_res.status == InferenceStatus.READY:
+                            ml_inferences_count += 1
+                            ml_repository.insert(ml_res)
+                            ml_alerts = ml_alert_adapter.process_inference_result(ml_res)
+                            if ml_alerts:
+                                new_alerts += len(ml_alerts)
+
             active_scenarios_str = f" | Active Scenarios: {', '.join(active_scenarios_in_db)}" if active_scenarios_in_db else ""
             alert_info = f" | Alerts: {new_alerts}" if new_alerts > 0 else ""
+            ml_info = f" | ML Predictions: {ml_inferences_count}" if ml_inferences_count > 0 else ""
             print(
                 f"[{time.strftime('%H:%M:%S')}] Step {step_count:04d} | "
-                f"Readings: {len(readings)} | Persisted: {persisted} records to database{alert_info}{active_scenarios_str}",
+                f"Readings: {len(readings)} | Persisted: {persisted} records{ml_info}{alert_info}{active_scenarios_str}",
                 flush=True
             )
             time.sleep(poll_interval)

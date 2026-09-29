@@ -71,7 +71,7 @@ The baseline factory models **12 heterogeneous simulated machines**:
 
 ## Development Status & Roadmap
 
-Current Status: **Phase 7 — ML Dataset Collection, Training & Model Evaluation (COMPLETED)**
+Current Status: **Phase 8 — Edge ML Anomaly & Predictive Inference Engine (COMPLETED)**
 
 - **Phase 0 — Architecture & Control Docs**: Completed.
 - **Phase 1 — Factory Simulation Core**: Completed. Run local demo via `python -m simulator` or test suite via `python -m pytest tests/simulator/`.
@@ -81,7 +81,29 @@ Current Status: **Phase 7 — ML Dataset Collection, Training & Model Evaluation
 - **Phase 5 — FastAPI Backend & React Dashboard**: Completed. Run API backend via `python -m api`, frontend via `cd dashboard/react-app && npm run dev`, end-to-end demo via `python -m api.demo`, or test suite via `python -m pytest tests/api/`.
 - **Phase 6 — Fault Injection Framework & Rule-Based Alerts**: Completed. Run alert & fault demo via `python -m alerts.demo` or test suite via `python -m pytest tests/alerts/ tests/integration/`.
 - **Phase 7 — ML Dataset Collection, Training & Model Evaluation**: Completed. Run ML demo via `python -m ml.demo` or individual training pipelines (`python -m ml.pipelines.build_dataset`, `python -m ml.pipelines.train_anomaly`, `python -m ml.pipelines.train_rul`).
-- **Phase 8 — Edge ML Anomaly & Predictive Inference Engine**: Next Target.
+- **Phase 8 — Edge ML Anomaly & Predictive Inference Engine**: Completed. Run Edge ML demo via `python -m ml.inference.demo` or test suite via `python -m pytest tests/ml/`.
+- **Phase 9 — Device Shadow, Fleet Management & Local Job Engine**: Next Target.
+
+### Running Edge ML Inference Engine
+
+1. **Run Real-Time Edge ML Inference Demonstration**:
+   ```bash
+   python -m ml.inference.demo
+   ```
+
+2. **Start Storage & Continuous Ingestion Worker with ML Inference**:
+   ```bash
+   python -m storage.worker
+   ```
+
+3. **Query ML Endpoints via FastAPI**:
+   - ML Health Status: `http://localhost:8000/api/ml/status`
+   - Loaded Model Metadata: `http://localhost:8000/api/ml/models`
+   - Fleet Anomaly/RUL Summary: `http://localhost:8000/api/ml/fleet-summary`
+   - Inference Latency Metrics: `http://localhost:8000/api/ml/metrics`
+
+4. **Inspect Live Predictive Maintenance UI**:
+   - React ML Console: `http://localhost:5173/ml`
 
 ### Running ML Pipelines & Experiment Tracking
 
@@ -139,6 +161,7 @@ Current Status: **Phase 7 — ML Dataset Collection, Training & Model Evaluation
    ```
    - Dashboard UI: `http://localhost:5173`
    - Alerts Console: `http://localhost:5173/alerts`
+   - Predictive ML Console: `http://localhost:5173/ml`
 
 5. **Run Phase 6 Fault-Injection & Alerting Verification Demo**:
    ```bash
@@ -169,6 +192,18 @@ For detailed architectural details and documentation:
 - [docs/phase7/model-export.md](docs/phase7/model-export.md) — Phase 7 model binary & metadata export.
 - [docs/phase7/evaluation-results.md](docs/phase7/evaluation-results.md) — Phase 7 evaluation benchmarks and results.
 - [docs/phase7/reproducibility.md](docs/phase7/reproducibility.md) — Phase 7 reproducibility and command execution guide.
+- [docs/phase8/ml-inference-architecture.md](docs/phase8/ml-inference-architecture.md) — Phase 8 edge ML inference engine architecture.
+- [docs/phase8/model-loading.md](docs/phase8/model-loading.md) — Phase 8 model loading and version validation.
+- [docs/phase8/realtime-feature-pipeline.md](docs/phase8/realtime-feature-pipeline.md) — Phase 8 temporal feature pipeline & buffering.
+- [docs/phase8/inference-results.md](docs/phase8/inference-results.md) — Phase 8 unified ML results and persistence.
+- [docs/phase8/onnx-runtime.md](docs/phase8/onnx-runtime.md) — Phase 8 ONNX runtime export and numerical equivalence.
+- [docs/phase8/alert-integration.md](docs/phase8/alert-integration.md) — Phase 8 ML operational alert engine integration.
+- [docs/phase8/api-dashboard.md](docs/phase8/api-dashboard.md) — Phase 8 REST endpoints, SSE stream, and React dashboard.
+- [docs/phase8/failure-handling.md](docs/phase8/failure-handling.md) — Phase 8 non-fatal error handling and resilience.
+- [docs/phase8/performance.md](docs/phase8/performance.md) — Phase 8 latency metrics and edge benchmarks.
+- [docs/phase8/testing.md](docs/phase8/testing.md) — Phase 8 testing and validation strategy.
+- [docs/phase8/reproducibility.md](docs/phase8/reproducibility.md) — Phase 8 reproducibility and command guide.
+- [docs/phase8/limitations.md](docs/phase8/limitations.md) — Phase 8 engineering assumptions and limitations.
 
 ---
 

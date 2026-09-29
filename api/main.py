@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 
 from api.config import APIConfig
 from api.dependencies import get_api_config, get_db_engine
-from api.routes import health, factory, machines, telemetry, realtime, alerts, scenarios
+from api.routes import health, factory, machines, telemetry, realtime, alerts, scenarios, ml
 
 logging.basicConfig(
     level=logging.INFO,
@@ -36,7 +36,7 @@ def create_app() -> FastAPI:
     cfg = get_api_config()
     app = FastAPI(
         title="Smart Factory Machine Monitoring API",
-        description="REST and Realtime APIs for 12 heterogeneous industrial machines, multi-protocol telemetry, and operational state.",
+        description="REST and Realtime APIs for 12 heterogeneous industrial machines, multi-protocol telemetry, operational state, and predictive maintenance ML inference.",
         version="1.0.0",
         lifespan=lifespan,
         docs_url="/docs",
@@ -71,7 +71,7 @@ def create_app() -> FastAPI:
     app.include_router(alerts.router)
     app.include_router(scenarios.router)
     app.include_router(scenarios.demo_router)
-
+    app.include_router(ml.router)
 
     return app
 

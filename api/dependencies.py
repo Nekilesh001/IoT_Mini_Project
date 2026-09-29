@@ -90,3 +90,20 @@ def get_factory_profiles() -> Dict[str, MachineProfile]:
         sim = get_simulator_singleton()
         _factory_profiles = {m.machine_id: m.profile for m in sim.get_all_machines()}
     return _factory_profiles
+
+
+_ml_service = None
+
+
+def get_ml_repository():
+    from storage.repository import MLInferenceRepository
+    session_factory = get_session_factory_dep()
+    return MLInferenceRepository(session_factory)
+
+
+def get_ml_service():
+    global _ml_service
+    if _ml_service is None:
+        from ml.inference.service import MLInferenceService
+        _ml_service = MLInferenceService()
+    return _ml_service

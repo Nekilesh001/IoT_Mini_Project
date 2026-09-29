@@ -1,8 +1,6 @@
 # Phase Status — Smart Factory Machine Monitoring and Predictive Maintenance System
 
-## Current Status Overview
-
-- **Current Active Phase**: Phase 7 — ML Dataset Collection, Training & Model Evaluation
+## Current Status Overview- **Current Active Phase**: Phase 8 — Edge ML Anomaly & Predictive Inference Engine
 - **Phase Status**: `COMPLETED`
 
 ---
@@ -10,7 +8,7 @@
 ## Phase Milestones & Progress Log
 
 | Phase | Description | Status | Notes / Deliverables |
-| :---: | :--- | :---: | :--- |
+| :--- | :--- | :--- | :--- |
 | **0** | Architecture, Factory Definition, Machine R&D | **COMPLETED** | Core specification and control docs created |
 | **1** | Factory Simulation Core | **COMPLETED** | 12-machine physics engine, state machine, dynamic telemetry, causal degradation, scenarios, unit tests passing |
 | **2** | Protocol Simulation and Adapters (Modbus TCP, OPC UA, MQTT) | **COMPLETED** | Modbus TCP server/adapter, OPC UA server/adapter, MQTT publisher/adapter, 18 automated tests passing, demo runnable |
@@ -19,7 +17,7 @@
 | **5** | FastAPI Backend Service & React Operations Dashboard | **COMPLETED** | FastAPI REST API, SSE real-time telemetry streaming, React operations dashboard with heterogeneous machine metrics, dynamic charts, protocol health visibility, 77 pytest passing, 5 frontend tests passing, build verified |
 | **6** | Fault Injection Framework & Rule-Based Alerts | **COMPLETED** | Systematic fault scenario manager, machine-specific scenarios, rule-based alert engine, alert lifecycle (OPEN->ACK->RESOLVED), deduplication, cooldown, hysteresis, PostgreSQL persistence, alert REST/SSE endpoints, React alert console, 104 tests passing, demo runnable |
 | **7** | ML Dataset Collection, Training & Model Evaluation | **COMPLETED** | Offline telemetry dataset collectors (PostgreSQL & Deterministic 7200s simulation), 1019 observable temporal features with strict anti-leakage validation, chronological train/val/test split, unsupervised Isolation Forest anomaly model, HistGradientBoosting RUL model (91.1% MAE improvement), local file-based MLflow tracking (`mlruns/`), joblib & metadata export, 117 tests passing, demo runnable |
-| **8** | Edge ML Anomaly & Predictive Inference Engine | Planned | ONNX zero-dependency edge inference |
+| **8** | Edge ML Anomaly & Predictive Inference Engine | **COMPLETED** | Real-time temporal feature pipeline (1019 features), machine-aware buffering, ONNX Runtime conversion & verification (max diff <= 1.05ms), Scikit-Learn fallback, `ml_inferences` persistence table, `MLAlertAdapter` integration (`source='ML'`), FastAPI `/api/ml/*` endpoints, SSE `event: ml_inference`, React predictive maintenance dashboard (`/ml`), 137 tests passing, demo runnable |
 | **9** | Device Shadow, Fleet Management & Local Job Engine | Planned | Local state sync & rollout jobs |
 | **10**| Security Hardening (mTLS, Secrets, RBAC) | Planned | Transport encryption & access policies |
 | **11**| Optional AWS Integration (IoT Core, DynamoDB, Lambda) | Planned | Cloud hybrid sync |
@@ -28,24 +26,23 @@
 
 ---
 
-## Phase 7 Acceptance Verification Summary
+## Phase 8 Acceptance Verification Summary
 
-- [x] **Dataset Sources**: PostgreSQL query collector (`PostgresTelemetryCollector`) and deterministic multi-machine simulation generator (`SimulatorDatasetGenerator`) stepping existing `FactorySimulator` for 7200s across healthy, degraded, and fault recovery cycles.
-- [x] **Observable Signal Whitelisting**: Machine-specific observable telemetry whitelist (`OBSERVABLE_SIGNALS_BY_MACHINE_TYPE`) covering all 12 machines without synthesizing missing signals.
-- [x] **Strict Anti-Leakage Isolation**: Formal feature validation checking against `PROHIBITED_LEAKAGE_PATTERNS`, raising fatal `TargetLeakageError` if ground-truth variables, health indices, fault flags, or target fields enter the feature matrix.
-- [x] **Temporal Feature Engineering**: Backward-looking rolling statistics (mean, std, min, max across 5, 15, and 30 measurement windows), rate of change (first difference), baseline deviation, operational state encoding, and signal quality indicator (1,019 total features).
-- [x] **Chronological Data Partitioning**: Non-random, per-machine chronological splitting into Train (60%), Validation (20%), and Test (20%) sets preventing future temporal leakage.
-- [x] **Unsupervised Anomaly Detection Model**: `IsolationForest` pipeline fitted on baseline history, outputting continuous anomaly scores and binary flags with validation F1=0.6229 and precision=0.7569.
-- [x] **RUL Supervised Regression Model**: `HistGradientBoostingRegressor` predicting continuous time-to-failure seconds, achieving Test MAE=80.07s and $R^2=0.8962$ representing a **91.1% MAE improvement** over the median baseline predictor.
-- [x] **Local MLflow Experiment Tracking**: Offline file-based tracking (`file:./mlruns`) with parameters, metrics, feature manifest artifacts, and model logging.
-- [x] **Model & Metadata Export**: Reproducible joblib binaries and comprehensive JSON metadata (`ModelMetadata`) stored in `data/models/` with verification reloading.
-- [x] **CLI Pipelines & Evaluation Reports**: Standalone executables `python -m ml.pipelines.build_dataset`, `python -m ml.pipelines.train_anomaly`, `python -m ml.pipelines.train_rul`, and markdown reports in `ml/reports/`.
-- [x] **End-to-End Demo & Test Suite**: `python -m ml.demo` runnable with 100% success; 117 automated tests passing across pytest (13 dedicated ML tests).
-- [x] **Comprehensive Documentation**: Complete set of 10 markdown documents in `docs/phase7/`.
+- [x] **Phase 7 Model Loading**: `ModelLoader` loads `.joblib` and `_metadata.json` artifacts, validating feature names, manifest version, 1,019 feature count, and anti-leakage policies.
+- [x] **Temporal Feature Buffering & Warm-Up**: `TemporalFeatureBuffer` and `MachineTelemetryBuffer` manage per-machine telemetry history, sorting chronologically and rejecting duplicates; returns explicit `NOT_READY` during initial warm-up (< 4 samples) and `READY` once sufficient rolling window context is accumulated.
+- [x] **Anti-Leakage Enforcement**: Runtime validation rejects all target, ground-truth, fault injection, and hidden degradation variables before model evaluation.
+- [x] **ONNX Model Export & Verification**: Converted Isolation Forest and HistGBM models to ONNX via `skl2onnx`; verified numerical equivalence against scikit-learn ($< 1.05 \times 10^{-3}$s difference on RUL, 100% categorical agreement on anomaly scores).
+- [x] **Runtime Fallback & Fault Isolation**: Seamless fallback from ONNX Runtime to Scikit-Learn; errors in ML evaluation degrade gracefully to `ERROR`/`DEGRADED` status without interrupting telemetry ingestion or storage.
+- [x] **Persistence Layer**: `MLInferenceRepository` and `ml_inferences` table store inference records with indexes and fleet summary aggregations across PostgreSQL and SQLite.
+- [x] **Operational Alert Integration**: `MLAlertAdapter` bridges ML results into the core alert lifecycle (`source = "ML"`, `OPEN -> ACK -> RESOLVED`) with configurable anomaly and critical RUL thresholds.
+- [x] **FastAPI & SSE Integration**: `/api/ml/*` REST endpoints and real-time SSE streaming (`event: ml_inference`).
+- [x] **React Operations Dashboard**: Extended with fleetwide anomaly metrics, machine detail ML status gauges, and a dedicated `/ml` predictive maintenance console.
+- [x] **Testing & Demo**: Full pytest suite passes with 137 tests (33 ML tests); `python -m ml.inference.demo` runs end-to-end and exits with code 0.
+- [x] **Comprehensive Documentation**: 12 markdown documents created in `docs/phase8/`.
 
 ---
 
 ## Next Phase Target
 
-- **Phase 8 — Edge ML Anomaly & Predictive Inference Engine**
-  - Target: ONNX model export, embedded lightweight edge inference runner, and runtime scoring integration.
+- **Phase 9 — Device Shadow, Fleet Management & Local Job Engine**
+  - Target: Local desired/reported state synchronization, config delta reconciliation, and staged rollout job engine.ation.

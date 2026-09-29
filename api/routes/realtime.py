@@ -5,7 +5,13 @@ Server-Sent Events (SSE) realtime telemetry and alert streaming endpoints.
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
-from api.dependencies import get_telemetry_repository, get_alert_repository, get_factory_profiles, get_api_config
+from api.dependencies import (
+    get_telemetry_repository,
+    get_alert_repository,
+    get_ml_repository,
+    get_factory_profiles,
+    get_api_config,
+)
 from api.services.realtime_service import RealtimeService
 
 router = APIRouter(prefix="/api/realtime", tags=["Realtime"])
@@ -15,16 +21,18 @@ router = APIRouter(prefix="/api/realtime", tags=["Realtime"])
 async def stream_realtime_telemetry(
     repo=Depends(get_telemetry_repository),
     alert_repo=Depends(get_alert_repository),
+    ml_repo=Depends(get_ml_repository),
     profiles=Depends(get_factory_profiles),
     config=Depends(get_api_config)
 ):
     """
-    Stream live telemetry events and operational alerts over Server-Sent Events (SSE).
+    Stream live telemetry events, operational alerts, and ML predictions over Server-Sent Events (SSE).
     """
     service = RealtimeService(
         repository=repo,
         profiles=profiles,
         alert_repository=alert_repo,
+        ml_repository=ml_repo,
         interval_seconds=config.realtime_interval_seconds
     )
 

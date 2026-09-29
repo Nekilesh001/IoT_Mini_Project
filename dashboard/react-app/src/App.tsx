@@ -5,6 +5,7 @@ import { OverviewPage } from "./pages/OverviewPage";
 import { MachinesPage } from "./pages/MachinesPage";
 import { MachineDetailPage } from "./pages/MachineDetailPage";
 import { AlertsPage } from "./pages/AlertsPage";
+import { MLPage } from "./pages/MLPage";
 import { ProtocolHealthPage } from "./pages/ProtocolHealthPage";
 
 export const App: React.FC = () => {
@@ -16,6 +17,7 @@ export const App: React.FC = () => {
           <Route path="/machines" element={<MachinesPage />} />
           <Route path="/machines/:machineId" element={<MachineDetailPage />} />
           <Route path="/alerts" element={<AlertsPage />} />
+          <Route path="/ml" element={<MLPage />} />
           <Route path="/protocols" element={<ProtocolHealthPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

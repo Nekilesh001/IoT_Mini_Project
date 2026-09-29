@@ -1,5 +1,5 @@
 """
-Realtime Server-Sent Events (SSE) streaming service for live telemetry and operational alerts.
+Realtime Server-Sent Events (SSE) streaming service for live telemetry, operational alerts, and ML inferences.
 """
 
 import asyncio
@@ -7,7 +7,7 @@ from datetime import datetime
 import json
 import logging
 from typing import AsyncGenerator, Dict, Optional
-from storage.repository import TelemetryRepository
+from storage.repository import TelemetryRepository, MLInferenceRepository
 from simulator.core.domain import MachineProfile
 from alerts.repository import AlertRepository
 
@@ -20,19 +20,21 @@ class RealtimeService:
         repository: TelemetryRepository,
         profiles: Dict[str, MachineProfile],
         alert_repository: Optional[AlertRepository] = None,
+        ml_repository: Optional[MLInferenceRepository] = None,
         interval_seconds: float = 1.0
     ):
         self._repo = repository
         self._profiles = profiles
         self._alert_repo = alert_repository
+        self._ml_repo = ml_repository
         self._interval = interval_seconds
 
     async def event_generator(self) -> AsyncGenerator[str, None]:
         """
-        Yields SSE telemetry events as new database records arrive.
+        Yields SSE telemetry events, alerts, and ML predictions as new database records arrive.
         """
         last_sequences: Dict[str, int] = {}
-        last_alert_check: Optional[datetime] = None
+        last_ml_times: Dict[str, str] = {}
 
         # Initial emission of current latest snapshots upon connection
         for m_id, profile in sorted(self._profiles.items()):
@@ -54,6 +56,13 @@ class RealtimeService:
                     "derived": latest.derived or {},
                 }
                 yield f"event: telemetry\ndata: {json.dumps(event_data)}\n\n"
+
+            # Initial ML emission
+            if self._ml_repo:
+                latest_ml = self._ml_repo.get_latest_by_machine(m_id)
+                if latest_ml:
+                    last_ml_times[m_id] = latest_ml.event_time.isoformat() if latest_ml.event_time else ""
+                    yield f"event: ml_inference\ndata: {json.dumps(latest_ml.to_dict())}\n\n"
 
         while True:
             new_events_found = False
@@ -79,8 +88,17 @@ class RealtimeService:
                             "measurements": latest.measurements or {},
                             "derived": latest.derived or {},
                         }
-                        # Send both raw data and named event for maximum client compatibility
                         yield f"event: telemetry\ndata: {json.dumps(event_data)}\n\n"
+
+                # Check for new ML inferences
+                if self._ml_repo:
+                    latest_ml = self._ml_repo.get_latest_by_machine(m_id)
+                    if latest_ml and latest_ml.event_time:
+                        ml_time_str = latest_ml.event_time.isoformat()
+                        if ml_time_str != last_ml_times.get(m_id):
+                            last_ml_times[m_id] = ml_time_str
+                            new_events_found = True
+                            yield f"event: ml_inference\ndata: {json.dumps(latest_ml.to_dict())}\n\n"
 
             # Check for active alerts if alert repository is available
             if self._alert_repo:
