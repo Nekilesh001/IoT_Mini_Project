@@ -138,6 +138,15 @@ class TelemetryRepository:
                 select(func.count()).select_from(TelemetryRecord).where(TelemetryRecord.machine_id == machine_id)
             ).scalar_one()
 
+    def get_max_sequences(self) -> Dict[str, int]:
+        """Return a mapping of machine_id -> highest sequence number persisted in database."""
+        with self._session_factory() as session:
+            rows = session.execute(
+                select(TelemetryRecord.machine_id, func.max(TelemetryRecord.sequence))
+                .group_by(TelemetryRecord.machine_id)
+            ).all()
+            return {r[0]: int(r[1] or 0) for r in rows}
+
     def query_time_range(self, machine_id: str, start_time: datetime, end_time: datetime) -> List[TelemetryRecord]:
         if start_time.tzinfo is None:
             start_time = start_time.replace(tzinfo=timezone.utc)

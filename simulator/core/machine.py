@@ -80,6 +80,10 @@ class BaseMachine:
     def sequence_counter(self) -> int:
         return self._sequence_counter
 
+    def set_sequence_counter(self, count: int) -> None:
+        """Set the sequence counter for this machine."""
+        self._sequence_counter = max(0, int(count))
+
     def set_seed(self, seed: Optional[int]) -> None:
         self._seed = seed
         self._rng = random.Random(seed)

@@ -73,6 +73,12 @@ def run_worker():
     scenario_mgr = FaultScenarioManager(factory=factory)
     profiles = {m.machine_id: m.profile for m in factory.get_all_machines()}
 
+    # Synchronize starting sequence counters from database
+    max_seqs = repository.get_max_sequences()
+    for m in factory.get_all_machines():
+        if m.machine_id in max_seqs:
+            m.set_sequence_counter(max_seqs[m.machine_id])
+
     protocol_mgr = FactoryProtocolManager()
     protocol_mgr.register_simulator(factory)
     edge_service = EdgeIngestionService(profiles=profiles)

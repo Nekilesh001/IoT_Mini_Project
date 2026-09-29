@@ -166,8 +166,9 @@ class FeatureExtractor:
         else:
             # Align columns with trained feature ordering
             missing_cols = [c for c in self._feature_names if c not in combined_features.columns]
-            for c in missing_cols:
-                combined_features[c] = 0.0
+            if missing_cols:
+                missing_df = pd.DataFrame(0.0, index=combined_features.index, columns=missing_cols)
+                combined_features = pd.concat([combined_features, missing_df], axis=1)
             combined_features = combined_features[self._feature_names]
 
         return combined_features, manifest_entries
