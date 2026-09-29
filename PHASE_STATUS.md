@@ -1,8 +1,10 @@
 # Phase Status — Smart Factory Machine Monitoring and Predictive Maintenance System
 
 ## Current Status Overview
-- **Current Active Phase**: Phase 9 — Device State, Fleet & Job Management AWS-Ready Scaffold
+- **Current Active Phases**: Phase 10 — Security Hardening & Phase 12 — End-to-End Failure Testing & Verification
 - **Phase Status**: `COMPLETED`
+- **Phase 11 Status**: `PLANNED / NOT CONNECTED` (AWS-ready scaffolding intact; no active cloud resources or credentials)
+- **Phase 13 Status**: `PLANNED`
 
 ---
 
@@ -20,31 +22,36 @@
 | **7** | ML Dataset Collection, Training & Model Evaluation | **COMPLETED** | Offline telemetry dataset collectors (PostgreSQL & Deterministic 7200s simulation), 1019 observable temporal features with strict anti-leakage validation, chronological train/val/test split, unsupervised Isolation Forest anomaly model, HistGradientBoosting RUL model (91.1% MAE improvement), local file-based MLflow tracking (`mlruns/`), joblib & metadata export, 117 tests passing, demo runnable |
 | **8** | Edge ML Anomaly & Predictive Inference Engine | **COMPLETED** | Real-time temporal feature pipeline (1019 features), machine-aware buffering, ONNX Runtime conversion & verification (max diff <= 1.05ms), Scikit-Learn fallback, `ml_inferences` persistence table, `MLAlertAdapter` integration (`source='ML'`), FastAPI `/api/ml/*` endpoints, SSE `event: ml_inference`, React predictive maintenance dashboard (`/ml`), 137 tests passing, demo runnable |
 | **9** | Device Shadow, Fleet Management & Local Job Engine | **COMPLETED** | Local Device Shadow digital twins, delta computation, optimistic concurrency, fleet catalog for 12 machines, job engine with retries and attempt logs, command handler, audit logging, FastAPI REST endpoints, React `/management` console, AWS-ready adapter scaffolding, 205 tests passing, demo runnable |
-| **10**| Security Hardening (mTLS, Secrets, RBAC) | Planned | Transport encryption & access policies |
-| **11**| Optional AWS Integration (IoT Core, DynamoDB, Lambda) | Planned / Not Connected | Cloud hybrid sync when cloud resources become available |
-| **12**| End-to-End Failure Testing & Verification | Planned | Chaos & recovery testing |
-| **13**| Documentation, Benchmarking & Final Demonstration | Planned | Final benchmark reporting |
+| **10**| Security Hardening (mTLS, Secrets, RBAC, Audit) | **COMPLETED** | Environment secrets, secret hygiene validator, local X.509 CA & certificate issuance/validation, TLS/mTLS config, 4-tier RBAC (`VIEWER`, `OPERATOR`, `MAINTAINER`, `ADMIN`), JWT token auth, server-side authorization guards, audit trail with secret scrubbing, React `/security` console, 20 tests passing |
+| **11**| Optional AWS Integration (IoT Core, DynamoDB, Lambda) | **PLANNED / NOT CONNECTED** | AWS-ready scaffolding intact; no active cloud resources or credentials |
+| **12**| End-to-End Failure Testing & Verification | **COMPLETED** | 15-scenario catalog, failure injector, assertions engine, recovery metrics tracker, resilience runner, 8/8 demo scenarios passing, React `/resilience` console, 10 tests passing |
+| **13**| Documentation, Benchmarking & Final Demonstration | **PLANNED** | Final benchmark reporting |
 
 ---
 
-## Phase 9 Acceptance Verification Summary
+## Phase 10 Acceptance Verification Summary
 
-- [x] **Local Device Shadow**: Implemented `DeviceShadowState` and `DeviceShadowManager` with desired/reported state tracking, automated delta calculation, version incrementing, optimistic version conflict detection, and state synchronization.
-- [x] **Fleet Management**: Implemented `FleetManager` tracking identity, protocol, connectivity (`ONLINE`, `OFFLINE`, `DEGRADED`), management state (`ACTIVE`, `MAINTENANCE`), firmware/config versions, and aggregated `FleetSummary`.
-- [x] **Job Management & Retry Engine**: Implemented `JobManager` with lifecycle states (`PENDING -> IN_PROGRESS -> SUCCEEDED / FAILED / CANCELLED`), configurable max attempts, automatic retries, and detailed attempt tracking in `job_attempts`.
-- [x] **Command Abstraction**: Implemented `CommandHandler` validating industrial parameters (`SET_MODE`, `SET_SAMPLING_INTERVAL`, `REQUEST_STATE_SYNC`, `SIMULATE_RESTART`), translating into shadow updates and management jobs.
-- [x] **Persistence Layer**: Implemented `DeviceManagementRepository` with 5 SQLAlchemy ORM models (`device_shadow`, `fleet_devices`, `management_jobs`, `job_attempts`, `management_audit`) compatible with SQLite and PostgreSQL JSON/JSONB.
-- [x] **Audit Trail**: Every shadow mutation, fleet update, job transition, and command execution emits structured, auditable records to `management_audit`.
-- [x] **FastAPI REST Endpoints**: Implemented `/api/devices`, `/api/devices/{machine_id}/shadow`, `/api/jobs`, `/api/fleet/summary`, and `/api/management/audit`.
-- [x] **React Management Console**: Added `/management` page in React operations dashboard with interactive fleet inventory, digital twin shadow inspection, pending delta alerts, state sync triggers, and live job dispatching.
-- [x] **AWS Scaffolding (Safe & Disabled)**: Created abstract cloud interfaces (`CloudDeviceStateInterface`, `CloudJobsInterface`, `CloudFleetIndexingInterface`) and placeholder AWS adapters (`AWSIoTCoreAdapter`, `AWSIoTDeviceShadowAdapter`, `AWSIoTJobsAdapter`, `AWSIoTFleetIndexingAdapter`) with `AWS_ENABLED=false` local fallback.
-- [x] **Automated Testing & Demo**: All 205 pytest tests passing; `python -m device_management.demo` runs end-to-end and exits with code 0.
-- [x] **Comprehensive Documentation**: 11 markdown documents created in `docs/phase9/`.
+- [x] **Secrets Management & Hygiene**: `.env.example` created with placeholders only; typed `SecurityConfig`; zero secrets committed; automated regex and entropy scanner (`python -m security.validation`) detects 0 leaks.
+- [x] **Local PKI & TLS/mTLS**: `CertificateManager` generates local Root CA, server/client X.509 certs, verifies chain, expiration, and SAN; `certs/` gitignored; TLS/mTLS configurable with safe fallback (`TLS_ENABLED=false`).
+- [x] **Local Authentication & JWT**: `AuthenticationService` provides PBKDF2 password hashing, bootstrap accounts, JWT creation with HS256, expiration enforcement, and signature decoding.
+- [x] **Hierarchical RBAC & Authorization**: `RBACPolicy` and FastAPI dependencies enforce server-side permissions for `VIEWER`, `OPERATOR`, `MAINTAINER`, `ADMIN`; unauthorized requests return 403 Forbidden.
+- [x] **Security Audit Trail**: `SecurityAuditService` logs authentication attempts, authorization denials, and administrative actions with secret masking.
+- [x] **API & React Security Console**: FastAPI `/api/auth/*` and `/api/security/*` endpoints; React `/security` dashboard page.
+
+---
+
+## Phase 12 Acceptance Verification Summary
+
+- [x] **Failure Scenario Catalog**: 15 deterministic failure modes across Event Bus, Database, Storage, Adapters, Edge Quality, ML Inference, Alert Engine, Device Jobs, Network, and Process Restarts.
+- [x] **Deterministic Failure Injector**: `FailureInjector` intercepts communication, database operations, and adapter lifecycles with context manager scoped testing.
+- [x] **Store-and-Forward & Replay Verification**: Event bus and database outages buffer to local SQLite `PersistentBuffer` and replay 100% of messages with zero loss and zero duplicate leaks.
+- [x] **Graceful ML & Alert Degradation**: ML model failure marks subsystem `DEGRADED` while raw telemetry and deterministic rule-based alerts continue uninterrupted without target leakage.
+- [x] **Job Retry & Lifecycle Verification**: Simulated job failures retry up to max limits with backoff and transition cleanly to `FAILED` with audit history.
+- [x] **Automated Suite & Demos**: `python -m security.demo` and `python -m failure_testing.demo` pass with exit code 0; full regression suite passes with 235 pytest tests.
+- [x] **React Resilience Console**: Added `/resilience` page with live component health, scenario controls, and recovery metrics.
 
 ---
 
 ## Next Phase Target
 
-- **Phase 10 — Security Hardening (mTLS, Secrets, RBAC)**
-  - Target: Protocol mTLS certificates, secrets management, local role-based access control, and edge security validation.
-
+- **Phase 13 — Documentation, Benchmarking & Final Demonstration**

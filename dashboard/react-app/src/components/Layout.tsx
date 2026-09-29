@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Cpu, Activity, Radio, ShieldAlert, Brain, RefreshCw, Sliders } from "lucide-react";
+import { LayoutDashboard, Cpu, Activity, Radio, ShieldAlert, Brain, RefreshCw, Sliders, Shield, HeartPulse } from "lucide-react";
 import { useRealtimeTelemetry } from "../hooks/useRealtimeTelemetry";
 
 interface LayoutProps {
@@ -18,6 +18,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     { path: "/ml", label: "Predictive ML", icon: Brain },
     { path: "/management", label: "Fleet & Jobs", icon: Sliders },
     { path: "/protocols", label: "Protocol Health", icon: Radio },
+    { path: "/security", label: "Security & RBAC", icon: Shield },
+    { path: "/resilience", label: "Resilience & Recovery", icon: HeartPulse },
   ];
 
 

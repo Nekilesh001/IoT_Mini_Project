@@ -168,6 +168,17 @@ Current Status: **Phase 8 — Edge ML Anomaly & Predictive Inference Engine (COM
    python -m alerts.demo
    ```
 
+6. **Run Phase 10 Security Hardening Demo & Hygiene Scanner**:
+   ```bash
+   python -m security.demo
+   python -m security.validation
+   ```
+
+7. **Run Phase 12 End-to-End Failure Testing & Resilience Verification Demo**:
+   ```bash
+   python -m failure_testing.demo
+   ```
+
 For detailed architectural details and documentation:
 - [AGENTS.md](AGENTS.md) — AI agent execution guidelines and strict constraints.
 - [PROJECT_SPECIFICATION.md](PROJECT_SPECIFICATION.md) — Master architectural blueprint and data schemas.
@@ -179,31 +190,30 @@ For detailed architectural details and documentation:
 - [docs/phase5/api-architecture.md](docs/phase5/api-architecture.md) — Phase 5 FastAPI backend and streaming architecture.
 - [docs/phase5/dashboard-architecture.md](docs/phase5/dashboard-architecture.md) — Phase 5 React operations console.
 - [docs/phase6/fault-architecture.md](docs/phase6/fault-architecture.md) — Phase 6 fault injection & alerting architecture.
-- [docs/phase6/rule-engine.md](docs/phase6/rule-engine.md) — Phase 6 rule evaluator and catalog.
-- [docs/phase6/alert-lifecycle.md](docs/phase6/alert-lifecycle.md) — Phase 6 alert lifecycle and state machine.
-- [docs/phase6/dashboard-alerts.md](docs/phase6/dashboard-alerts.md) — Phase 6 React alert console and components.
 - [docs/phase7/ml-architecture.md](docs/phase7/ml-architecture.md) — Phase 7 ML architecture & pipeline overview.
-- [docs/phase7/dataset-generation.md](docs/phase7/dataset-generation.md) — Phase 7 dataset collectors and simulation generator.
-- [docs/phase7/feature-engineering.md](docs/phase7/feature-engineering.md) — Phase 7 temporal features and signal whitelisting.
-- [docs/phase7/leakage-prevention.md](docs/phase7/leakage-prevention.md) — Phase 7 ground-truth isolation & anti-leakage controls.
-- [docs/phase7/anomaly-detection.md](docs/phase7/anomaly-detection.md) — Phase 7 unsupervised Isolation Forest model.
-- [docs/phase7/rul-regression.md](docs/phase7/rul-regression.md) — Phase 7 HistGradientBoosting RUL model.
-- [docs/phase7/mlflow-tracking.md](docs/phase7/mlflow-tracking.md) — Phase 7 local MLflow experiment tracking.
-- [docs/phase7/model-export.md](docs/phase7/model-export.md) — Phase 7 model binary & metadata export.
-- [docs/phase7/evaluation-results.md](docs/phase7/evaluation-results.md) — Phase 7 evaluation benchmarks and results.
-- [docs/phase7/reproducibility.md](docs/phase7/reproducibility.md) — Phase 7 reproducibility and command execution guide.
 - [docs/phase8/ml-inference-architecture.md](docs/phase8/ml-inference-architecture.md) — Phase 8 edge ML inference engine architecture.
-- [docs/phase8/model-loading.md](docs/phase8/model-loading.md) — Phase 8 model loading and version validation.
-- [docs/phase8/realtime-feature-pipeline.md](docs/phase8/realtime-feature-pipeline.md) — Phase 8 temporal feature pipeline & buffering.
-- [docs/phase8/inference-results.md](docs/phase8/inference-results.md) — Phase 8 unified ML results and persistence.
-- [docs/phase8/onnx-runtime.md](docs/phase8/onnx-runtime.md) — Phase 8 ONNX runtime export and numerical equivalence.
-- [docs/phase8/alert-integration.md](docs/phase8/alert-integration.md) — Phase 8 ML operational alert engine integration.
-- [docs/phase8/api-dashboard.md](docs/phase8/api-dashboard.md) — Phase 8 REST endpoints, SSE stream, and React dashboard.
-- [docs/phase8/failure-handling.md](docs/phase8/failure-handling.md) — Phase 8 non-fatal error handling and resilience.
-- [docs/phase8/performance.md](docs/phase8/performance.md) — Phase 8 latency metrics and edge benchmarks.
-- [docs/phase8/testing.md](docs/phase8/testing.md) — Phase 8 testing and validation strategy.
-- [docs/phase8/reproducibility.md](docs/phase8/reproducibility.md) — Phase 8 reproducibility and command guide.
-- [docs/phase8/limitations.md](docs/phase8/limitations.md) — Phase 8 engineering assumptions and limitations.
+- [docs/phase9/device-management-architecture.md](docs/phase9/device-management-architecture.md) — Phase 9 device shadow, fleet & jobs architecture.
+- [docs/phase10/security-architecture.md](docs/phase10/security-architecture.md) — Phase 10 security architecture & hardening.
+- [docs/phase10/secrets.md](docs/phase10/secrets.md) — Phase 10 secrets management & scanner.
+- [docs/phase10/tls-mtls.md](docs/phase10/tls-mtls.md) — Phase 10 local X.509 PKI & mTLS.
+- [docs/phase10/authentication.md](docs/phase10/authentication.md) — Phase 10 local authentication & JWT.
+- [docs/phase10/rbac.md](docs/phase10/rbac.md) — Phase 10 role-based access control matrix.
+- [docs/phase10/authorization.md](docs/phase10/authorization.md) — Phase 10 API authorization dependencies.
+- [docs/phase10/security-audit.md](docs/phase10/security-audit.md) — Phase 10 security audit trail.
+- [docs/phase10/api-security.md](docs/phase10/api-security.md) — Phase 10 API hardening headers & middleware.
+- [docs/phase10/testing.md](docs/phase10/testing.md) — Phase 10 security verification tests.
+- [docs/phase12/failure-architecture.md](docs/phase12/failure-architecture.md) — Phase 12 failure & resilience architecture.
+- [docs/phase12/failure-scenarios.md](docs/phase12/failure-scenarios.md) — Phase 12 failure scenario catalog (15 modes).
+- [docs/phase12/mqtt-outage.md](docs/phase12/mqtt-outage.md) — Phase 12 MQTT outage & buffer replay.
+- [docs/phase12/database-outage.md](docs/phase12/database-outage.md) — Phase 12 database outage recovery.
+- [docs/phase12/protocol-failure.md](docs/phase12/protocol-failure.md) — Phase 12 protocol adapter failure isolation.
+- [docs/phase12/ml-failure.md](docs/phase12/ml-failure.md) — Phase 12 ML failure & graceful degradation.
+- [docs/phase12/alert-failure.md](docs/phase12/alert-failure.md) — Phase 12 alert persistence resilience.
+- [docs/phase12/job-failure.md](docs/phase12/job-failure.md) — Phase 12 job retry exhaustion & terminal states.
+- [docs/phase12/restart-recovery.md](docs/phase12/restart-recovery.md) — Phase 12 process restart buffer persistence.
+- [docs/phase12/recovery-metrics.md](docs/phase12/recovery-metrics.md) — Phase 12 recovery latency & reliability metrics.
+- [docs/phase12/test-results.md](docs/phase12/test-results.md) — Phase 12 test execution summary.
+- [docs/phase12/limitations.md](docs/phase12/limitations.md) — Phase 12 scope, assumptions & limitations.
 
 ---
 

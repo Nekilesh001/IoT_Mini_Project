@@ -97,4 +97,12 @@ data/models/*
 *.parquet
 *.onnx
 
+# Certificates & Keys (Phase 10)
+certs/
+*.crt
+*.key
+*.pem
+*.csr
+
+
 

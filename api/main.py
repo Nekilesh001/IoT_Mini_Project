@@ -10,7 +10,8 @@ from fastapi.responses import JSONResponse
 
 from api.config import APIConfig
 from api.dependencies import get_api_config, get_db_engine
-from api.routes import health, factory, machines, telemetry, realtime, alerts, scenarios, ml, devices, jobs
+from api.routes import health, factory, machines, telemetry, realtime, alerts, scenarios, ml, devices, jobs, security, resilience
+from security.middleware import SecurityHeadersMiddleware
 
 logging.basicConfig(
     level=logging.INFO,
@@ -44,6 +45,9 @@ def create_app() -> FastAPI:
         openapi_url="/openapi.json"
     )
 
+    # Security headers middleware
+    app.add_middleware(SecurityHeadersMiddleware)
+
     # CORS configuration for frontend
     app.add_middleware(
         CORSMiddleware,
@@ -74,6 +78,8 @@ def create_app() -> FastAPI:
     app.include_router(ml.router)
     app.include_router(devices.router)
     app.include_router(jobs.router)
+    app.include_router(security.router)
+    app.include_router(resilience.router)
 
     return app
 
