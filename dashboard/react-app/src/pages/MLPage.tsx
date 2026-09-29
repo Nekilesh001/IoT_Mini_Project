@@ -12,6 +12,7 @@ import {
   MLInferenceResult,
 } from "../types";
 import { Brain, Cpu, Gauge, Activity, Wrench, Zap, ShieldAlert, CheckCircle2, Clock, BarChart3, Filter } from "lucide-react";
+import { MLAnalyticsChart } from "../components/MLAnalyticsChart";
 
 export const MLPage: React.FC = () => {
   const [status, setStatus] = useState<MLSystemStatus | null>(null);
@@ -237,6 +238,13 @@ export const MLPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Live Visual Analytics & Degradation Trajectory Chart */}
+      <MLAnalyticsChart
+        inferences={recentInferences}
+        selectedMachine={selectedMachine}
+        onSelectMachine={(m) => setSelectedMachine(m)}
+      />
 
       {/* Multi-Model Predictive AI Suite Section */}
       <section>
