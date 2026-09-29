@@ -20,7 +20,7 @@ Edge Gateway & Processing Engine (Validation, Normalization, Explicit Filtering,
        ↓
 Canonical JSON Telemetry Stream
        ↓
-Local Event Bus (MQTT) & Storage (PostgreSQL / TimescaleDB)
+Local Event Bus (MQTT) & Storage (PostgreSQL / SQLite)
        ↓
 FastAPI Backend & React Operations Dashboard
 ```
@@ -33,7 +33,7 @@ FastAPI Backend & React Operations Dashboard
 > **Validation Notice**: The libraries, frameworks, and tools listed below represent **candidate implementation technologies** subject to prototyping and empirical validation during future development phases, rather than permanently frozen architectural choices.
 
 - **Simulation & Edge (Candidate Stack)**: Python 3.11+, PyModbus, asyncua, Eclipse Paho MQTT, ONNX Runtime.
-- **Message Bus & Storage (Candidate Stack)**: Eclipse Mosquitto (MQTT), PostgreSQL / TimescaleDB, Redis.
+- **Message Bus & Storage (Candidate Stack)**: Eclipse Mosquitto (MQTT), PostgreSQL / TimescaleDB, SQLite.
 - **Backend API (Candidate Stack)**: FastAPI, Uvicorn, Pydantic, SQLAlchemy.
 - **Frontend Dashboard (Candidate Stack)**: React, Vite, Vanilla CSS / Tailwind CSS, Recharts / Canvas.
 - **Machine Learning (Candidate Stack)**: Scikit-Learn, XGBoost, PyTorch / ONNX Runtime.
@@ -71,13 +71,21 @@ The baseline factory models **12 heterogeneous simulated machines**:
 
 ## Development Status & Roadmap
 
-Current Status: **Phase 3 — Canonical Telemetry and Edge Ingestion Pipeline (COMPLETED)**
+Current Status: **Phase 4 — Local Storage, MQTT Event Bus, Buffering & Processing (COMPLETED)**
 
 - **Phase 0 — Architecture & Control Docs**: Completed.
 - **Phase 1 — Factory Simulation Core**: Completed. Run local demo via `python -m simulator` or test suite via `python -m pytest tests/simulator/`.
 - **Phase 2 — Protocol Simulation & Adapters**: Completed. Run local protocol demo via `python -m protocols.protocol_demo` or test suite via `python -m pytest tests/protocols/`.
 - **Phase 3 — Canonical Telemetry & Edge Ingestion**: Completed. Run local edge demo via `python -m edge.demo` or test suite via `python -m pytest tests/edge/`.
-- **Phase 4 — Local Storage, MQTT Event Bus & Buffering**: Next Target.
+- **Phase 4 — Local Storage, MQTT Event Bus & Buffering**: Completed. Run local storage demo via `python -m storage.demo` or test suite via `python -m pytest tests/storage/ tests/event_bus/ tests/integration/`.
+- **Phase 5 — FastAPI Backend Service & React Dashboard**: Next Target.
+
+### Running Local Infrastructure (Optional)
+
+To start local PostgreSQL and Mosquitto MQTT broker via Docker Compose:
+```bash
+docker compose up -d
+```
 
 For detailed architectural details and documentation:
 - [AGENTS.md](AGENTS.md) — AI agent execution guidelines and strict constraints.
@@ -86,6 +94,7 @@ For detailed architectural details and documentation:
 - [docs/phase1/simulation-architecture.md](docs/phase1/simulation-architecture.md) — Phase 1 simulation architecture.
 - [docs/phase2/protocol-architecture.md](docs/phase2/protocol-architecture.md) — Phase 2 protocol architecture and adapters.
 - [docs/phase3/edge-architecture.md](docs/phase3/edge-architecture.md) — Phase 3 edge ingestion architecture and canonical schema.
+- [docs/phase4/event-bus-architecture.md](docs/phase4/event-bus-architecture.md) — Phase 4 event bus and storage architecture.
 
 ---
 

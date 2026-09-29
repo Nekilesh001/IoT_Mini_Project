@@ -132,7 +132,11 @@ class OPCUAServerManager(BaseProtocolServer):
                     v_val = OPCUAMapper.cast_to_variant_val(val, sig_def.signal_type)
                     await nodes[sig_def.name].write_value(v_val)
 
-        asyncio.run_coroutine_threadsafe(_async_update(), self._loop)
+        future = asyncio.run_coroutine_threadsafe(_async_update(), self._loop)
+        try:
+            future.result(timeout=2.0)
+        except Exception as e:
+            logger.error(f"Error updating OPC UA node values: {e}")
 
     def stop(self) -> None:
         """Stop the OPC UA server cleanly."""
