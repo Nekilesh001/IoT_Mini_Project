@@ -214,5 +214,12 @@ def run_postgres_verification(postgres_url: str):
 
 
 if __name__ == "__main__":
-    db_url = "postgresql://postgres:neki132506@127.0.0.1:5432/smart_factory"
+    import os
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
+    db_url = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@127.0.0.1:5432/smart_factory")
     run_postgres_verification(db_url)
+
