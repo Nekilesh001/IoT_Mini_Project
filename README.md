@@ -9,21 +9,114 @@ A professional, end-to-end Industrial Internet of Things (IIoT) smart-factory si
 
 ## High-Level System Architecture
 
-The project employs a **Local-First, Cloud-Optional Hybrid Architecture**. The system operates fully offline using local services and can optionally synchronize with AWS IoT Core.
+The project employs a **Local-First, Cloud-Optional Hybrid Architecture**. The system operates fully offline using local services. The system is designed for optional future synchronization with AWS IoT Core.
 
+```mermaid
+flowchart TB
+    subgraph FACTORY["Smart Factory Floor (12 Heterogeneous Machines)"]
+        M_OPC["OPC UA Machines<br/>(CNC-001, ROB-001, IMM-001, VIS-001)"]
+        M_MOD["Modbus TCP Machines<br/>(CNC-002, CON-001, PRS-001, CMP-001, CHL-001)"]
+        M_MQTT["MQTT Machines<br/>(ROB-002, PMP-001, AGV-001)"]
+    end
+
+    subgraph PROTOCOLS["Protocol Servers & Publishers"]
+        S_OPC["OPC UA Server (asyncua)"]
+        S_MOD["Modbus TCP Server (pymodbus)"]
+        S_MQTT["MQTT Publisher (paho-mqtt)"]
+    end
+
+    M_OPC --> S_OPC
+    M_MOD --> S_MOD
+    M_MQTT --> S_MQTT
+
+    subgraph EDGE["Edge Gateway Tier"]
+        subgraph ADAPTERS["Protocol Adapters"]
+            A_OPC["OPC UA Adapter"]
+            A_MOD["Modbus Adapter"]
+            A_MQTT["MQTT Adapter"]
+        end
+
+        S_OPC --> A_OPC
+        S_MOD --> A_MOD
+        S_MQTT --> A_MQTT
+
+        A_OPC --> CANON["Canonical Telemetry (Normalized JSON)"]
+        A_MOD --> CANON
+        A_MQTT --> CANON
+
+        CANON --> INGEST["Edge Validation & Quality Engine<br/>(Deduplication & Sequence Checks)"]
+        INGEST --> EVBUS["Local Event Bus (MQTT Broker)"]
+
+        subgraph INFERENCE_ALERTS["Processing & Intelligence"]
+            RULES["Rule-Based Alert Engine<br/>(Hysteresis & Cooldown)"]
+            ML_INF["Edge ML Inference<br/>(Isolation Forest & HistGradientBoosting)"]
+        end
+
+        EVBUS --> RULES
+        EVBUS --> ML_INF
+
+        subgraph RESILIENCE["Resilience & Buffering"]
+            SAF["Store-and-Forward Buffer (SQLite)"]
+            FAIL_REC["Failure Injection & Recovery Testing"]
+        end
+
+        EVBUS --> SAF
+        SAF --> PG_STORE[("PostgreSQL Storage<br/>(JSON / JSONB)")]
+    end
+
+    subgraph MANAGEMENT["Device & Fleet Management (Digital Twin)"]
+        SHADOW["Device Shadow Engine<br/>(Desired / Reported Delta)"]
+        FLEET["Fleet Manager<br/>(12 Machine State Catalog)"]
+        JOBS["Job Manager<br/>(Lifecycle & Retries)"]
+        CMD["Command Handler<br/>(Device Execution)"]
+    end
+
+    EVBUS --> SHADOW
+    FLEET --- SHADOW
+    JOBS --> CMD
+    CMD --> SHADOW
+
+    subgraph SECURITY["Security & Governance"]
+        AUTH["Authentication (JWT / HS256)"]
+        RBAC["RBAC & Authorization<br/>(VIEWER, OPERATOR, MAINTAINER, ADMIN)"]
+        PKI["Local PKI / TLS & mTLS"]
+        AUDIT["Security Audit Logger<br/>(Secret Scrubbing)"]
+    end
+
+    subgraph BACKEND_UI["Application & Interface Tier"]
+        API["FastAPI Backend Service<br/>(REST & SSE Streaming)"]
+        DASH["React Operations Dashboard<br/>(Vite + TypeScript)"]
+    end
+
+    PG_STORE --> API
+    RULES --> API
+    ML_INF --> API
+    SHADOW --> API
+    JOBS --> API
+    SECURITY --> API
+    API -->|REST / SSE Telemetry| DASH
+
+    subgraph AWS_FUTURE["FUTURE AWS INTEGRATION — NOT CONNECTED (Phase 11 Scaffolding)"]
+        AWS_CORE["AWS IoT Core"]
+        AWS_SHADOW["AWS IoT Device Shadow"]
+        AWS_JOBS["AWS IoT Jobs"]
+        AWS_INDEX["AWS Fleet Indexing"]
+    end
+
+    SHADOW -.->|Optional Cloud Sync| AWS_SHADOW
+    JOBS -.->|Optional Job Sync| AWS_JOBS
+    FLEET -.->|Optional Fleet Index| AWS_INDEX
+    EVBUS -.->|Optional Cloud Ingestion| AWS_CORE
 ```
-Factory Floor (12 Machines)
-       ↓
-Protocol Servers (Modbus TCP / OPC UA / MQTT)
-       ↓
-Edge Gateway & Processing Engine (Validation, Normalization, Explicit Filtering, Buffer, Edge ML)
-       ↓
-Canonical JSON Telemetry Stream
-       ↓
-Local Event Bus (MQTT) & Storage (PostgreSQL / SQLite)
-       ↓
-FastAPI Backend & React Operations Dashboard
-```
+
+### Architecture Notes
+
+- **Local-first operation**: The entire system operates fully offline without active AWS infrastructure or external network dependencies.
+- **Protocol abstraction**: Decouples heterogeneous machine simulators from industrial protocol servers (Modbus TCP, OPC UA, MQTT) and canonical edge ingestion pipelines.
+- **ML integration**: Real-time unsupervised anomaly detection (Isolation Forest) and Remaining Useful Life estimation (HistGradientBoosting) with strict anti-leakage boundaries.
+- **Device management**: Local digital twin device shadows (desired/reported state reconciliation), fleet catalog, and job lifecycle execution with retries.
+- **Security and resilience**: Zero-trust security (local X.509 PKI/mTLS, JWT auth, 4-tier RBAC, audit logging) combined with durable store-and-forward SQLite buffering, with zero event loss and duplicate-free replay verified in controlled local outage/recovery tests.
+- **AWS is currently NOT CONNECTED**: AWS IoT Core, Device Shadow, Jobs, and Fleet Indexing exist strictly as scaffolding and future adapters only.
 
 ---
 

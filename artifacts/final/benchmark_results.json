@@ -1,0 +1,100 @@
+{
+  "environment": {
+    "os": "Windows 10 (10.0.26200)",
+    "python_version": "3.11.9",
+    "cpu": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "cpu_cores_physical": 16,
+    "cpu_cores_logical": 24,
+    "total_ram_gb": 15.71,
+    "architecture": "AMD64",
+    "benchmark_classification": "LOCAL DEVELOPMENT BENCHMARK",
+    "timestamp": "2026-09-29T12:12:52.719701+00:00"
+  },
+  "benchmarks": {
+    "edge_normalization": {
+      "iterations": 1000,
+      "mean_us": 4.57,
+      "median_us": 4.4,
+      "p95_us": 4.9,
+      "p99_us": 6.7,
+      "max_us": 57.7,
+      "throughput_events_per_sec": 218804.02
+    },
+    "rule_evaluation": {
+      "iterations": 1000,
+      "mean_us": 2.36,
+      "median_us": 2.2,
+      "p95_us": 2.4,
+      "p99_us": 3.7,
+      "max_us": 102.1,
+      "throughput_evals_per_sec": 423621.11
+    },
+    "storage_buffer": {
+      "iterations": 500,
+      "write_mean_us": 10334.04,
+      "write_median_us": 10114.9,
+      "write_p95_us": 11186.25,
+      "write_max_us": 37992.6,
+      "batch_read_ms": 1.81,
+      "batch_ack_ms": 10.94,
+      "write_throughput_msgs_sec": 96.77
+    },
+    "ml_inference_pipeline": {
+      "iterations": 200,
+      "total_pipeline_mean_us": 50724.83,
+      "total_pipeline_median_us": 49376.65,
+      "total_pipeline_p95_us": 63874.96,
+      "total_pipeline_max_us": 67476.6,
+      "inferences_per_sec": 19.71
+    },
+    "api_endpoints": {
+      "/api/health": {
+        "mean_ms": 3.28,
+        "median_ms": 3.21,
+        "p95_ms": 3.97,
+        "max_ms": 4.22
+      },
+      "/api/machines": {
+        "mean_ms": 289.42,
+        "median_ms": 277.49,
+        "p95_ms": 368.45,
+        "max_ms": 382.73
+      },
+      "/api/alerts/active": {
+        "mean_ms": 4.86,
+        "median_ms": 4.8,
+        "p95_ms": 5.75,
+        "max_ms": 6.31
+      },
+      "/api/ml/status": {
+        "mean_ms": 7.7,
+        "median_ms": 7.57,
+        "p95_ms": 9.67,
+        "max_ms": 10.57
+      },
+      "/api/fleet/summary": {
+        "mean_ms": 5.82,
+        "median_ms": 5.71,
+        "p95_ms": 6.85,
+        "max_ms": 10.3
+      },
+      "/api/security/status": {
+        "mean_ms": 3.37,
+        "median_ms": 3.28,
+        "p95_ms": 4.25,
+        "max_ms": 5.21
+      }
+    },
+    "device_management": {
+      "iterations": 200,
+      "shadow_delta_mean_us": 1637.72,
+      "shadow_delta_median_us": 1600.2,
+      "shadow_delta_p95_us": 1895.46,
+      "job_lifecycle_mean_us": 4815.08,
+      "job_lifecycle_median_us": 4683.25,
+      "job_lifecycle_p95_us": 5764.69,
+      "job_lifecycle_max_us": 7254.0,
+      "jobs_per_sec": 207.68
+    }
+  }
+}
