@@ -120,7 +120,7 @@ class TelemetryRepository:
             return session.execute(
                 select(TelemetryRecord)
                 .where(TelemetryRecord.machine_id == machine_id)
-                .order_by(desc(TelemetryRecord.sequence))
+                .order_by(desc(TelemetryRecord.event_time), desc(TelemetryRecord.ingestion_time))
             ).scalars().first()
 
     def get_machine_history(self, machine_id: str, limit: int = 100) -> List[TelemetryRecord]:

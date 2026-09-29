@@ -33,14 +33,14 @@ class RealtimeService:
         """
         Yields SSE telemetry events, alerts, and ML predictions as new database records arrive.
         """
-        last_sequences: Dict[str, int] = {}
+        last_event_ids: Dict[str, str] = {}
         last_ml_times: Dict[str, str] = {}
 
         # Initial emission of current latest snapshots upon connection
         for m_id, profile in sorted(self._profiles.items()):
             latest = self._repo.get_latest_by_machine(m_id)
             if latest:
-                last_sequences[m_id] = latest.sequence
+                last_event_ids[m_id] = latest.event_id
                 event_data = {
                     "event_type": "TELEMETRY",
                     "machine_id": m_id,
@@ -69,9 +69,8 @@ class RealtimeService:
             for m_id, profile in sorted(self._profiles.items()):
                 latest = self._repo.get_latest_by_machine(m_id)
                 if latest:
-                    last_seq = last_sequences.get(m_id, 0)
-                    if latest.sequence > last_seq:
-                        last_sequences[m_id] = latest.sequence
+                    if latest.event_id != last_event_ids.get(m_id):
+                        last_event_ids[m_id] = latest.event_id
                         new_events_found = True
 
                         event_data = {

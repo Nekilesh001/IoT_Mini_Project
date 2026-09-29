@@ -31,16 +31,13 @@ export function useRealtimeTelemetry(onEventReceived?: (event: RealtimeTelemetry
         try {
           const event: RealtimeTelemetryEvent = JSON.parse(dataStr);
           if (event.event_type === "TELEMETRY" && event.machine_id) {
-            const prevSeq = seenSequences.current.get(event.machine_id) || 0;
-            if (event.sequence >= prevSeq) {
-              seenSequences.current.set(event.machine_id, event.sequence);
-              setLatestEvents((prev) => ({
-                ...prev,
-                [event.machine_id]: event,
-              }));
-              if (callbackRef.current) {
-                callbackRef.current(event);
-              }
+            seenSequences.current.set(event.machine_id, event.sequence);
+            setLatestEvents((prev) => ({
+              ...prev,
+              [event.machine_id]: event,
+            }));
+            if (callbackRef.current) {
+              callbackRef.current(event);
             }
           }
           setLastHeartbeat(new Date());
