@@ -71,21 +71,47 @@ The baseline factory models **12 heterogeneous simulated machines**:
 
 ## Development Status & Roadmap
 
-Current Status: **Phase 4 — Local Storage, MQTT Event Bus, Buffering & Processing (COMPLETED)**
+Current Status: **Phase 5 — FastAPI Backend Service & React Operations Dashboard (COMPLETED)**
 
 - **Phase 0 — Architecture & Control Docs**: Completed.
 - **Phase 1 — Factory Simulation Core**: Completed. Run local demo via `python -m simulator` or test suite via `python -m pytest tests/simulator/`.
 - **Phase 2 — Protocol Simulation & Adapters**: Completed. Run local protocol demo via `python -m protocols.protocol_demo` or test suite via `python -m pytest tests/protocols/`.
 - **Phase 3 — Canonical Telemetry & Edge Ingestion**: Completed. Run local edge demo via `python -m edge.demo` or test suite via `python -m pytest tests/edge/`.
 - **Phase 4 — Local Storage, MQTT Event Bus & Buffering**: Completed. Run local storage demo via `python -m storage.demo` or test suite via `python -m pytest tests/storage/ tests/event_bus/ tests/integration/`.
-- **Phase 5 — FastAPI Backend Service & React Dashboard**: Next Target.
+- **Phase 5 — FastAPI Backend & React Dashboard**: Completed. Run API backend via `python -m api`, frontend via `cd dashboard/react-app && npm run dev`, end-to-end demo via `python -m api.demo`, or test suite via `python -m pytest tests/api/`.
+- **Phase 6 — Fault Injection Framework & Rule-Based Alerts**: Next Target.
 
-### Running Local Infrastructure (Optional)
+### Running Local Infrastructure & Operational Dashboard
 
-To start local PostgreSQL and Mosquitto MQTT broker via Docker Compose:
-```bash
-docker compose up -d
-```
+1. **Start PostgreSQL & Event Bus (Docker Compose)**:
+   ```bash
+   docker compose up -d
+   ```
+
+2. **Start Factory Simulation & Edge Ingestion Worker**:
+   ```bash
+   python -m storage.worker
+   ```
+
+3. **Start FastAPI Backend**:
+   ```bash
+   python -m api
+   ```
+   - OpenAPI Docs: `http://localhost:8000/docs`
+   - API Base: `http://localhost:8000/api`
+
+4. **Start React Operations Dashboard**:
+   ```bash
+   cd dashboard/react-app
+   npm install
+   npm run dev
+   ```
+   - Dashboard UI: `http://localhost:5173`
+
+5. **Run One-Shot End-to-End API/SSE Verification Demo**:
+   ```bash
+   python -m api.demo
+   ```
 
 For detailed architectural details and documentation:
 - [AGENTS.md](AGENTS.md) — AI agent execution guidelines and strict constraints.
@@ -95,6 +121,8 @@ For detailed architectural details and documentation:
 - [docs/phase2/protocol-architecture.md](docs/phase2/protocol-architecture.md) — Phase 2 protocol architecture and adapters.
 - [docs/phase3/edge-architecture.md](docs/phase3/edge-architecture.md) — Phase 3 edge ingestion architecture and canonical schema.
 - [docs/phase4/event-bus-architecture.md](docs/phase4/event-bus-architecture.md) — Phase 4 event bus and storage architecture.
+- [docs/phase5/api-architecture.md](docs/phase5/api-architecture.md) — Phase 5 FastAPI backend and streaming architecture.
+- [docs/phase5/dashboard-architecture.md](docs/phase5/dashboard-architecture.md) — Phase 5 React operations console.
 
 ---
 
