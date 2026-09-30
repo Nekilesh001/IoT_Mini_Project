@@ -110,6 +110,12 @@ class MLInferenceService:
             result.error_message = "ML Inference subsystem is disabled in configuration"
             return result
 
+        # Explicit exclusion path for external IoT sensors (no industrial ML models applicable)
+        if m_type == "ENVIRONMENT_SENSOR" or m_id == "IOT-SENSOR-001" or str(m_id).startswith("IOT-"):
+            result.status = InferenceStatus.NOT_READY
+            result.error_message = "External IoT device is excluded from industrial predictive maintenance ML"
+            return result
+
         if not self._is_initialized:
             result.status = InferenceStatus.ERROR
             result.error_code = "SERVICE_NOT_INITIALIZED"

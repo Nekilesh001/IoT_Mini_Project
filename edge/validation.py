@@ -33,12 +33,16 @@ class TelemetryValidator:
             return ValidationResult(is_valid=False, errors=errors)
 
         # 2. Verify machine_type match
-        if reading.machine_type != profile.machine_type.value:
-            errors.append(f"Machine type mismatch for '{reading.machine_id}': expected '{profile.machine_type.value}', got '{reading.machine_type}'.")
+        prof_mtype = profile.machine_type.value if hasattr(profile.machine_type, "value") else str(profile.machine_type)
+        read_mtype = reading.machine_type.value if hasattr(reading.machine_type, "value") else str(reading.machine_type)
+        if read_mtype != prof_mtype:
+            errors.append(f"Machine type mismatch for '{reading.machine_id}': expected '{prof_mtype}', got '{read_mtype}'.")
 
         # 3. Verify protocol consistency
-        if reading.protocol.value != profile.protocol_metadata.value:
-            errors.append(f"Protocol mismatch for '{reading.machine_id}': expected '{profile.protocol_metadata.value}', got '{reading.protocol.value}'.")
+        prof_proto = profile.protocol_metadata.value if hasattr(profile.protocol_metadata, "value") else str(profile.protocol_metadata)
+        read_proto = reading.protocol.value if hasattr(reading.protocol, "value") else str(reading.protocol)
+        if read_proto != prof_proto:
+            errors.append(f"Protocol mismatch for '{reading.machine_id}': expected '{prof_proto}', got '{read_proto}'.")
 
         # 4. Validate measurements against signal catalog
         signals_by_name = {s.name: s for s in profile.signals}

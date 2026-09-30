@@ -92,6 +92,15 @@ def get_factory_profiles() -> Dict[str, MachineProfile]:
     return _factory_profiles
 
 
+def get_all_streaming_profiles() -> Dict[str, MachineProfile]:
+    """Returns combined profiles for the 12 factory machines plus external IoT sensors for SSE."""
+    from protocols.wokwi.registry import get_external_device_registry
+    factory_profs = dict(get_factory_profiles())
+    ext_registry = get_external_device_registry()
+    factory_profs.update(ext_registry.get_all_machine_profiles())
+    return factory_profs
+
+
 _ml_service = None
 
 

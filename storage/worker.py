@@ -33,8 +33,11 @@ from scenarios.manager import FaultScenarioManager
 from scenarios.repository import ScenarioStateRepository
 from ml.inference.service import MLInferenceService
 from ml.inference.alert_adapter import MLAlertAdapter
-from ml.inference.models import InferenceStatus
+from ml.inference.models import InferenceStatus, AnomalyLabel
 from ml.inference.window_aggregator import WindowedAnomalyAggregator
+from protocols.wokwi.config import WokwiConfig
+from protocols.wokwi.bridge import WokwiMQTTBridge
+from protocols.wokwi.registry import get_external_device_registry
 
 logging.basicConfig(
     level=logging.INFO,
@@ -48,11 +51,14 @@ def run_worker():
     poll_interval = float(os.getenv("WORKER_POLL_INTERVAL", "1.0"))
     ml_enabled = os.getenv("ML_INFERENCE_ENABLED", "true").lower() in ("true", "1", "yes")
 
+    wokwi_config = WokwiConfig.from_env()
+
     print("=" * 80)
     print(" SMART FACTORY — CONTINUOUS SIMULATION & INGESTION WORKER")
     print(f" Database URL: {db_url}")
     print(f" Loop Interval: {poll_interval}s")
     print(f" ML Inference: {'ENABLED' if ml_enabled else 'DISABLED'}")
+    print(f" Wokwi Bridge: {'ENABLED (' + wokwi_config.broker + ':' + str(wokwi_config.port) + ')' if wokwi_config.enabled else 'DISABLED'}")
     print("=" * 80)
 
     # 1. Initialize Database & Repositories
@@ -90,6 +96,12 @@ def run_worker():
     scenario_mgr = FaultScenarioManager(factory=factory)
     profiles = {m.machine_id: m.profile for m in factory.get_all_machines()}
 
+    # Register external IoT profiles (e.g. Wokwi IOT-SENSOR-001) alongside factory machines
+    external_registry = get_external_device_registry()
+    external_profiles = external_registry.get_all_machine_profiles()
+    all_profiles = dict(profiles)
+    all_profiles.update(external_profiles)
+
     # Synchronize starting sequence counters from database
     max_seqs = repository.get_max_sequences()
     for m in factory.get_all_machines():
@@ -98,7 +110,17 @@ def run_worker():
 
     protocol_mgr = FactoryProtocolManager()
     protocol_mgr.register_simulator(factory)
-    edge_service = EdgeIngestionService(profiles=profiles)
+    edge_service = EdgeIngestionService(profiles=all_profiles)
+
+    # 3b. Initialize Wokwi MQTT Bridge
+    wokwi_bridge = None
+    if wokwi_config.enabled:
+        try:
+            wokwi_bridge = WokwiMQTTBridge(wokwi_config)
+            wokwi_bridge.start()
+            logger.info("[StorageWorker] Wokwi MQTT Bridge service started.")
+        except Exception as e:
+            logger.warning(f"[StorageWorker] Could not start Wokwi MQTT Bridge: {e}")
 
     # 4. Start services
     protocol_mgr.start_all()
@@ -152,6 +174,11 @@ def run_worker():
             time.sleep(0.05)
 
             readings = protocol_mgr.read_all_adapters()
+            if wokwi_bridge is not None:
+                wokwi_readings = wokwi_bridge.pop_all_readings()
+                if wokwi_readings:
+                    readings.extend(wokwi_readings)
+
             persisted = 0
             new_alerts = 0
             ml_inferences_count = 0
@@ -166,25 +193,37 @@ def run_worker():
                     if triggered:
                         new_alerts += len(triggered)
 
-                    # Execute Edge ML Inference pipeline
-                    if ml_service is not None:
+                    # Execute Edge ML Inference pipeline (only for industrial machines)
+                    if ml_service is not None and res.canonical_telemetry.machine_type != "ENVIRONMENT_SENSOR" and not res.canonical_telemetry.machine_id.startswith("IOT-"):
                         ml_res = ml_service.infer(res.canonical_telemetry)
                         if ml_res.status == InferenceStatus.READY:
                             ml_inferences_count += 1
-                            # Always persist the raw inference result for dashboard charts
-                            ml_repository.insert(ml_res)
+                            m_id = res.canonical_telemetry.machine_id
 
-                            # Record result in the sliding window aggregator
+                            # Step 1: Record raw result into the sliding window aggregator FIRST.
+                            # The window tracks the trend: EMA score and anomaly ratio across
+                            # the last N readings. A single-reading spike does NOT qualify as
+                            # an anomaly — only a sustained trend does.
                             anomaly_aggregator.record(ml_res)
 
-                            # Only trigger ML alerts when the window confirms sustained anomaly.
-                            # This prevents per-second false positives from transient spikes.
-                            m_id = res.canonical_telemetry.machine_id
-                            if anomaly_aggregator.should_alert(m_id):
+                            # Step 2: Overwrite the anomaly label and score with the
+                            # trend-based windowed determination before writing to DB.
+                            # This means the dashboard chart and the persisted record both
+                            # reflect the actual sustained trend, not per-second jitter.
+                            ml_res.anomaly_score = anomaly_aggregator.get_ema_score(m_id)
+                            sustained = anomaly_aggregator.should_alert(m_id)
+                            ml_res.anomaly_label = (
+                                AnomalyLabel.ANOMALOUS if sustained else AnomalyLabel.NORMAL
+                            )
+
+                            # Step 3: Persist the trend-enriched result to the database.
+                            ml_repository.insert(ml_res)
+
+                            # Step 4: Only fire an ML alert when the sustained anomaly is confirmed.
+                            if sustained:
                                 ml_alerts = ml_alert_adapter.process_inference_result(ml_res)
                                 if ml_alerts:
                                     new_alerts += len(ml_alerts)
-                                    # Log window context alongside alert for observability
                                     summary = anomaly_aggregator.get_window_summary(m_id)
                                     logger.info(
                                         f"[ML-Window] Sustained anomaly confirmed for {m_id}: "
@@ -205,6 +244,11 @@ def run_worker():
         pass
     finally:
         print("[StorageWorker] Cleaning up services...")
+        if wokwi_bridge is not None:
+            try:
+                wokwi_bridge.stop()
+            except Exception:
+                pass
         try:
             protocol_mgr.stop_all()
         except Exception:

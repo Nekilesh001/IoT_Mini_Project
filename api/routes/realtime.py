@@ -10,6 +10,7 @@ from api.dependencies import (
     get_alert_repository,
     get_ml_repository,
     get_factory_profiles,
+    get_all_streaming_profiles,
     get_api_config,
 )
 from api.services.realtime_service import RealtimeService
@@ -22,7 +23,7 @@ async def stream_realtime_telemetry(
     repo=Depends(get_telemetry_repository),
     alert_repo=Depends(get_alert_repository),
     ml_repo=Depends(get_ml_repository),
-    profiles=Depends(get_factory_profiles),
+    profiles=Depends(get_all_streaming_profiles),
     config=Depends(get_api_config)
 ):
     """

@@ -130,7 +130,7 @@ class EdgeIngestionService:
             plant_id=profile.plant_id,
             line_id=profile.line_id,
             machine_id=profile.machine_id,
-            machine_type=profile.machine_type.value,
+            machine_type=profile.machine_type.value if hasattr(profile.machine_type, "value") else str(profile.machine_type),
             source=CanonicalSource(
                 protocol=reading.protocol.value,
                 endpoint=endpoint,
