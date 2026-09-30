@@ -4,10 +4,12 @@ import { useMachines } from "../hooks/useMachines";
 import { useAlerts } from "../hooks/useAlerts";
 import { useRealtimeTelemetry } from "../hooks/useRealtimeTelemetry";
 import { fetchMLStatus } from "../api/ml";
-import { MLSystemStatus } from "../types";
+import { fetchExternalIoTDevices } from "../api/iot";
+import { MLSystemStatus, ExternalIoTDevice } from "../types";
 import { MachineCard } from "../components/MachineCard";
 import { MetricCard } from "../components/MetricCard";
 import { ActiveAlertsPanel } from "../components/ActiveAlertsPanel";
+import { ExternalIoTCard } from "../components/ExternalIoTCard";
 import { Activity, AlertOctagon, ShieldAlert, Cpu, Radio, Sparkles, CheckCircle2 } from "lucide-react";
 
 export const OverviewPage: React.FC = () => {
@@ -16,11 +18,14 @@ export const OverviewPage: React.FC = () => {
   const { activeAlerts, summary: alertSummary, acknowledgeAlert, resolveAlert } = useAlerts();
   const { latestEvents, status: streamStatus } = useRealtimeTelemetry();
   const [mlStatus, setMlStatus] = useState<MLSystemStatus | null>(null);
+  const [externalDevices, setExternalDevices] = useState<ExternalIoTDevice[]>([]);
 
   useEffect(() => {
     fetchMLStatus().then(setMlStatus).catch(() => {});
+    fetchExternalIoTDevices().then(setExternalDevices).catch(() => {});
     const interval = setInterval(() => {
       fetchMLStatus().then(setMlStatus).catch(() => {});
+      fetchExternalIoTDevices().then(setExternalDevices).catch(() => {});
     }, 3000);
     return () => clearInterval(interval);
   }, []);
@@ -151,6 +156,69 @@ export const OverviewPage: React.FC = () => {
           onAcknowledge={acknowledgeAlert}
           onResolve={resolveAlert}
         />
+      </section>
+
+      {/* External IoT Devices Section (Wokwi Pico W & Environmental Sensors) */}
+      <section>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <div>
+            <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#f8fafc", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+              <Radio size={18} color="#06b6d4" /> External IoT Sensor Network (HiveMQ Bridge)
+            </h2>
+            <span style={{ fontSize: "12px", color: "#64748b" }}>
+              Real-time environmental sensor ingress via broker.hivemq.com:1883 &bull; Discrete from 12 factory machine physics
+            </span>
+          </div>
+          <span
+            style={{
+              fontSize: "11px",
+              fontFamily: "'JetBrains Mono', monospace",
+              color: "#38bdf8",
+              background: "rgba(6, 182, 212, 0.1)",
+              padding: "4px 10px",
+              borderRadius: "6px",
+              border: "1px solid rgba(6, 182, 212, 0.2)",
+            }}
+          >
+            Bridge Topic: iot/plant/+/line/+/device/+/telemetry
+          </span>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))",
+            gap: "20px",
+          }}
+        >
+          {externalDevices.length > 0 ? (
+            externalDevices.map((dev) => (
+              <ExternalIoTCard
+                key={dev.device_id}
+                device={dev}
+                liveEvent={latestEvents[dev.device_id]}
+              />
+            ))
+          ) : (
+            <ExternalIoTCard
+              device={{
+                device_id: "IOT-SENSOR-001",
+                device_type: "ENVIRONMENT_SENSOR",
+                device_class: "EXTERNAL_IOT",
+                plant_id: "PLANT_01",
+                line_id: "LINE_A",
+                description: "External Wokwi Raspberry Pi Pico W Environment Sensor",
+                hardware: "Raspberry Pi Pico W + DHT22 + Status LED",
+                firmware_version: "0.1.0",
+                ingress_broker: "broker.hivemq.com",
+                telemetry_topic: "iot/plant/PLANT_01/line/LINE_A/device/IOT-SENSOR-001/telemetry",
+                command_topic: "iot/plant/PLANT_01/line/LINE_A/device/IOT-SENSOR-001/commands",
+                connection_status: latestEvents["IOT-SENSOR-001"] ? "ONLINE" : "OFFLINE",
+              }}
+              liveEvent={latestEvents["IOT-SENSOR-001"]}
+            />
+          )}
+        </div>
       </section>
 
       {/* Machine Fleet Grid */}

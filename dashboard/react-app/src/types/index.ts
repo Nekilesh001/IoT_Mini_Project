@@ -261,3 +261,47 @@ export interface MLSystemStatus {
   };
 }
 
+export interface ExternalIoTDevice {
+  device_id: string;
+  device_type: string;
+  device_class: string;
+  plant_id: string;
+  line_id: string;
+  description: string;
+  hardware: string;
+  firmware_version: string;
+  ingress_broker: string;
+  telemetry_topic: string;
+  command_topic: string;
+  connection_status: "ONLINE" | "STALE" | "OFFLINE";
+  last_seen?: string | null;
+  latest_temperature_c?: number | null;
+  latest_humidity_pct?: number | null;
+  latest_sequence?: number | null;
+  actuator_state?: {
+    type?: string;
+    state?: string;
+  } | null;
+  control_state?: {
+    mode?: string;
+    alertThresholdC?: number;
+    normalThresholdC?: number;
+  } | null;
+}
+
+export interface WokwiBridgeStatus {
+  enabled: boolean;
+  connected: boolean;
+  health: string;
+  broker: string;
+  port: number;
+  telemetry_topic: string;
+  command_topic: string;
+  received_count: number;
+  rejected_count: number;
+  reconnect_count: number;
+  last_message_time?: string | null;
+  last_error?: string | null;
+  queue_size: number;
+}
+
