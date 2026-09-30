@@ -12,14 +12,16 @@ export const ExternalIoTCard: React.FC<ExternalIoTCardProps> = ({ device, liveEv
 
   // Extract latest dynamic measurements from live SSE event or initial device state
   const rawMeasurements = liveEvent?.measurements || {};
-  const currentTemp = (rawMeasurements.temperature_c ?? rawMeasurements.temperatureC ?? device.latest_temperature_c) as number | undefined;
-  const currentHum = (rawMeasurements.humidity_pct ?? rawMeasurements.humidityPct ?? device.latest_humidity_pct) as number | undefined;
+  const tempRaw = rawMeasurements.temperature_c ?? rawMeasurements.temperatureC ?? device.latest_temperature_c;
+  const humRaw = rawMeasurements.humidity_pct ?? rawMeasurements.humidityPct ?? device.latest_humidity_pct;
+  const currentTemp = typeof tempRaw === "number" ? tempRaw : null;
+  const currentHum = typeof humRaw === "number" ? humRaw : null;
   const sequence = liveEvent?.sequence ?? device.latest_sequence ?? 0;
   const eventTime = liveEvent?.event_time ?? device.last_seen;
 
   // Append new telemetry points to the local history for the mini trend line
   useEffect(() => {
-    if (currentTemp !== undefined && currentHum !== undefined) {
+    if (currentTemp !== null && currentHum !== null) {
       const timeStr = eventTime ? new Date(eventTime).toLocaleTimeString() : new Date().toLocaleTimeString();
       setHistory((prev) => {
         const next = [...prev, { time: timeStr, temp: currentTemp, hum: currentHum }];
@@ -34,8 +36,8 @@ export const ExternalIoTCard: React.FC<ExternalIoTCardProps> = ({ device, liveEv
   const isOnline = status === "ONLINE";
 
   // Temperature status classification
-  const isCriticalTemp = currentTemp !== undefined && currentTemp >= 35.0;
-  const isWarningTemp = currentTemp !== undefined && currentTemp >= 30.0;
+  const isCriticalTemp = currentTemp !== null && currentTemp >= 35.0;
+  const isWarningTemp = currentTemp !== null && currentTemp >= 30.0;
   const tempColor = isCriticalTemp ? "#f43f5e" : isWarningTemp ? "#fbbf24" : "#38bdf8";
 
   // Actuator LED state
@@ -169,7 +171,7 @@ export const ExternalIoTCard: React.FC<ExternalIoTCardProps> = ({ device, liveEv
           </div>
           <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
             <span style={{ fontSize: "26px", fontWeight: 900, color: tempColor, fontFamily: "'JetBrains Mono', monospace" }}>
-              {currentTemp !== undefined ? currentTemp.toFixed(1) : "--.-"}
+              {currentTemp !== null ? currentTemp.toFixed(1) : "--.-"}
             </span>
             <span style={{ fontSize: "14px", fontWeight: 700, color: "#94a3b8" }}>°C</span>
           </div>
@@ -198,7 +200,7 @@ export const ExternalIoTCard: React.FC<ExternalIoTCardProps> = ({ device, liveEv
           </div>
           <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
             <span style={{ fontSize: "26px", fontWeight: 900, color: "#34d399", fontFamily: "'JetBrains Mono', monospace" }}>
-              {currentHum !== undefined ? currentHum.toFixed(1) : "--.-"}
+              {currentHum !== null ? currentHum.toFixed(1) : "--.-"}
             </span>
             <span style={{ fontSize: "14px", fontWeight: 700, color: "#94a3b8" }}>%</span>
           </div>
