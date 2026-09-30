@@ -96,7 +96,7 @@ def list_external_iot_devices(
             hum_pct = meas.get("humidity_pct", meas.get("humidityPct"))
             
             # Extract metadata if available
-            raw = latest.raw_payload or {}
+            raw = getattr(latest, "raw_payload", None) or (latest.derived or {})
             actuator = raw.get("actuator")
             control = raw.get("control")
 
@@ -152,7 +152,7 @@ def get_external_iot_device(
         meas = latest.measurements or {}
         temp_c = meas.get("temperature_c", meas.get("temperatureC"))
         hum_pct = meas.get("humidity_pct", meas.get("humidityPct"))
-        raw = latest.raw_payload or {}
+        raw = getattr(latest, "raw_payload", None) or (latest.derived or {})
         actuator = raw.get("actuator")
         control = raw.get("control")
 
